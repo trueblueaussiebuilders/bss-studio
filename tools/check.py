@@ -16,6 +16,12 @@ BANNED = [
     r"\bsure thing\b", r"\bwill (soar|explode|double|triple|rally|run)\b", r"\bupside of\b", r"\bfair value\b",
     r"\bworth (owning|a look|buying)\b", r"\bentry point\b", r"\bnot too late\b",
 ]
+# Australian units and spelling. Gold, silver and PGMs stay in ounces (the Australian industry standard).
+IMPERIAL = [r"\bpounds?\b", r"\blbs?\b", r"/lb\b", r"\bmiles?\b", r"\bfeet\b", r"\bfoot\b", r"\binch(es)?\b",
+            r"\bacres?\b", r"\bgallons?\b", r"\bfahrenheit\b", r"\bshort tons?\b", r"\btons\b", r"\byards?\b"]
+US_SPELLING = [r"\bmeters?\b", r"\bkilometers?\b", r"\bcenters?\b", r"\bdefense\b", r"\bcolou?r?ed\b(?<!coloured)",
+               r"\baluminum\b", r"\bliters?\b", r"\bfavorable\b", r"\blabor\b", r"\bmold\b", r"\banalyze\b",
+               r"\borganization\b", r"\brealize\b", r"\bprogramme\b"]
 NEEDED_CAPTION = ["not financial advice", "do your own research", "#blackswanstocks"]
 
 
@@ -67,6 +73,12 @@ def main(folder):
         for hit in re.finditer(pat, blob, flags=re.I):
             ctx_ = blob[max(0, hit.start() - 30): hit.end() + 30].replace("\n", " ")
             err.append(f"compliance: '{hit.group(0)}' in ...{ctx_}...")
+    for pat in (IMPERIAL if (meta.get("commodity") or "").lower() != "uranium" else IMPERIAL[3:]):
+        for hit in re.finditer(pat, blob, flags=re.I):
+            err.append(f"units: '{hit.group(0)}' is imperial. Use metric (copper and base metals in US$ per tonne, gold in ounces)")
+    for pat in US_SPELLING:
+        for hit in re.finditer(pat, blob):
+            err.append(f"spelling: '{hit.group(0)}' is US spelling. Use Australian English")
     low = cap.lower()
     for need in NEEDED_CAPTION:
         if need not in low: err.append(f"caption is missing '{need}'")

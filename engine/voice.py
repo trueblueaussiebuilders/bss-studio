@@ -48,6 +48,7 @@ def _elevenlabs(lines):
     errors = []
     for v in cands:                      # pick the first voice this account can use
         try:
+            lines = [speakable(x) for x in lines]
             first = _tts(key, v["id"], model, lines[0], nxt=lines[1] if len(lines) > 1 else None)
             print(f"ElevenLabs voice: {v['name']} ({v['id']})")
             break
@@ -66,6 +67,18 @@ def _elevenlabs(lines):
     return out
 
 
+def _lexicon():
+    p = os.path.join(ROOT, "lexicon.json")
+    return json.load(open(p)) if os.path.exists(p) else {"say": {}, "ipa": {}}
+
+
+def speakable(line):
+    """Text swaps from lexicon.json (acronyms, units, respellings). Applied to the audio only."""
+    for pat, rep in _lexicon().get("say", {}).items():
+        line = re.sub(pat, rep, line)
+    return re.sub(r"\s{2,}", " ", line).strip()
+
+
 def _kokoro(lines):
     from kokoro_onnx import Kokoro
     os.makedirs(KOKORO_DIR, exist_ok=True)
@@ -74,10 +87,46 @@ def _kokoro(lines):
         if not os.path.exists(p):
             print("downloading", f); urllib.request.urlretrieve(KOKORO_URL + f, p)
     k = Kokoro(os.path.join(KOKORO_DIR, "kokoro-v1.0.onnx"), os.path.join(KOKORO_DIR, "voices-v1.0.bin"))
-    voice = os.environ.get("KOKORO_VOICE") or _cfg().get("kokoro_voice", "am_michael")
+    voice = os.environ.get("KOKORO_VOICE") or _cfg().get("kokoro_voice", "bf_emma")
     speed = _cfg().get("kokoro_speed", 1.0)
-    lang = "en-gb" if voice[:1] == "b" else "en-us"          # bf_/bm_ voices are British
-    return [k.create(line, voice=voice, speed=speed, lang=lang)[0].astype(np.float32) for line in lines]
+    lang = _cfg().get("kokoro_lang") or ("en-gb" if voice[:1] == "b" else "en-us")
+    ipa = _lexicon().get("ipa", {})
+    out = []
+    for line in lines:
+        text = speakable(line)
+        ph = k.tokenizer.phonemize(text, lang)
+        for word, target in ipa.items():
+            if re.search(rf"\b{re.escape(word)}\b", text):
+                default = k.tokenizer.phonemize(word, lang).strip()
+                if default and default in ph:
+                    ph = ph.replace(default, target)
+                else:
+                    print(f"lexicon: couldn't place '{word}' in: {text}")
+        a = k.create(ph, voice=voice, speed=speed, lang=lang, is_phonemes=True,
+                     clause_pause=0.06, sentence_pause=0.2)[0].astype(np.float32)
+        out.append(_tighten(a))
+    return out
+
+
+def _tighten(a, max_gap=None, thresh=0.012):
+    """Shorten any silence inside a sentence to max_gap, so the read flows without odd mid-phrase stops."""
+    max_gap = _cfg().get("max_gap", 0.2) if max_gap is None else max_gap
+    win = int(0.01 * SR)
+    env = np.convolve(np.abs(a), np.ones(win) / win, mode="same")
+    quiet = env < thresh
+    keep, i, n = np.ones(len(a), bool), 0, len(a)
+    lim = int(max_gap * SR)
+    while i < n:
+        if quiet[i]:
+            j = i
+            while j < n and quiet[j]: j += 1
+            if i > 0 and j < n and j - i > lim:
+                cut0 = i + lim // 2
+                keep[cut0: cut0 + (j - i - lim)] = False
+            i = j
+        else:
+            i += 1
+    return a[keep]
 
 
 def _cfg():

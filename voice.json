@@ -1,7 +1,7 @@
 {
   "engine": "kokoro",
-  "kokoro_voice": "af_heart",
-  "kokoro_speed": 0.98,
+  "kokoro_voice": "bf_emma",
+  "kokoro_speed": 0.95,
   "sentence_gap": 0.42,
   "kokoro": {
     "line_gap": 0.85
@@ -11,5 +11,7 @@
   },
   "model": "eleven_multilingual_v2",
   "elevenlabs_voices": [],
-  "_note": "engine: 'kokoro' (free, runs in GitHub Actions) or 'elevenlabs' (needs ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID secrets). Kokoro voices worth trying: af_heart (default, clearest), am_michael, bf_emma, bm_george."
+  "_note": "engine: 'kokoro' (free, runs in GitHub Actions) or 'elevenlabs' (needs ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID secrets). bf_emma with en-gb pronunciation is the closest Kokoro gets to Australian English (non-rhotic, metre/route/data said the British way). max_gap caps any pause inside a sentence. Pronunciation fixes live in lexicon.json.",
+  "kokoro_lang": "en-gb",
+  "max_gap": 0.2
 }

@@ -30,11 +30,11 @@ SCENES = [
      "say": "It holds about two million tonnes of copper, but at a low grade of around zero point two percent."},
 
     {"type": "bars", "label": "The metal", "title": "Copper vs the *study* price",
-     "bars": [{"label": "Scoping study assumption (Nov 2025)", "value": 4.50},
-              {"label": "COMEX copper (early Nov 2026)", "value": 6.20, "highlight": True}],
-     "fmt": {"prefix": "US$", "suffix": "/lb", "dp": 2},
-     "note": "Copper moves daily. Source: company scoping study; Trading Economics, Nov 2026.",
-     "say": "Its scoping study assumed four fifty a pound. Copper has been trading around six twenty this month."},
+     "bars": [{"label": "Scoping study assumption (Nov 2025)", "value": 9920},
+              {"label": "COMEX copper (early Nov 2026)", "value": 13670, "highlight": True}],
+     "fmt": {"prefix": "US$", "suffix": "/t", "dp": 0},
+     "note": "US$4.50/lb and ~US$6.20/lb converted to tonnes. Copper moves daily. Sources: scoping study; Trading Economics.",
+     "say": "Its scoping study assumed about ten thousand US dollars a tonne. Copper has been trading near thirteen thousand seven hundred."},
 
     {"type": "intercept", "label": "The drilling", "title": "Long runs of *copper*",
      "holes": [{"id": "26BRD0042", "from": 10.2, "width": 383.8, "depth": 400, "headline": "384m @ 0.25%", "sub": "Cu from 10m"}],
@@ -64,7 +64,7 @@ CAPTION = """Alma Metals (ASX:ALM) owns 51% of the Briggs copper project near Gl
 What's interesting
 • Briggs resource: 932Mt @ 0.21% Cu for ~2.0Mt contained copper, plus molybdenum and silver (0.15% Cu cut-off)
 • Infill drilling: 383.8m @ 0.25% Cu from 10.2m (26BRD0042) and 76.7m @ 0.34% Cu
-• The Nov 2025 scoping study used US$4.50/lb copper. COMEX copper traded around US$6.20/lb in early Nov 2026
+• The Nov 2025 scoping study assumed copper at ~US$9,920/t. COMEX copper traded around US$13,670/t in early Nov 2026
 
 What's coming
 • Updated resource estimate planned for late 2026
