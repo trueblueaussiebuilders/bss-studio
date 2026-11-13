@@ -1,0 +1,2 @@
+# date  ticker   (every featured company; tools/check.py blocks repeats within 180 days)
+2026-11-16 VKA

@@ -1,0 +1,2 @@
+# One slug per line (folder under videos/). The post job only posts a slug whose date is today (Melbourne).
+2026-11-16-vka

@@ -1,0 +1,7 @@
+__pycache__/
+out/
+build/
+site/
+previews/
+brand/out/
+*.tmp.mp4

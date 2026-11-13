@@ -1,0 +1,47 @@
+name: Render preview
+
+# Renders any video that changed on a push (or a chosen one on demand) so you can watch it before it posts.
+on:
+  push:
+    branches: [main]
+    paths: ["videos/**"]
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Folder under videos/ to render"
+        type: string
+        required: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: bash tools/install.sh
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/kokoro
+          key: voices-kokoro-v1.0
+      - name: Render
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+        run: |
+          if [ -n "${{ github.event.inputs.slug }}" ]; then echo "${{ github.event.inputs.slug }}" > changed.txt
+          else git diff --name-only HEAD~1 HEAD -- videos | cut -d/ -f2 | sort -u > changed.txt; fi
+          while read -r slug; do
+            [ -f "videos/$slug/spec.py" ] || continue
+            python3 tools/check.py "videos/$slug" || true
+            python -m engine.build "videos/$slug" --out previews
+          done < changed.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: previews/
+          retention-days: 14

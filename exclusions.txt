@@ -1,0 +1,4 @@
+# Tickers never to feature: anything Mathew holds or has a conflict with. One per line, optional comment after.
+MI6  holding
+DEV  holding
+AKN  holding
