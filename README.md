@@ -1,6 +1,6 @@
 # Black Swan Stocks studio
 
-Automated motion-graphics Reels for [@blackswanstocks](https://instagram.com/blackswanstocks): one speculative ASX miner every Monday, Wednesday and Friday, and one big-picture topic (commodities, costs, policy) every Sunday. Roughly 45 seconds each.
+Automated motion-graphics Reels for [@blackswanstocks](https://instagram.com/blackswanstocks): one speculative ASX miner every Monday, Wednesday and Friday, and one big-picture topic (commodities, costs, policy) every Sunday. Roughly 55 seconds each.
 
 ## How it runs
 

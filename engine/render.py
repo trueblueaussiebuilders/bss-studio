@@ -81,16 +81,37 @@ def draw_frame(spec, tl, t):
     env = env_for(spec)
     sc = dict(spec.SCENES[idx]); sc["_n"] = sum(1 for s in spec.SCENES[:idx + 1] if s["type"] not in ("hook", "outro"))
     D = tl.durs[idx]
-    out = prog(lt, D - 0.26, 0.26) if idx < len(tl.scenes) - 1 else 0.0
+    out = prog(lt, D - 0.4, 0.4) if idx < len(tl.scenes) - 1 else 0.0
     ctx.push_group()
     if out: ctx.translate(0, -28 * ease_in_out(out))
-    scenes.RENDER[sc["type"]](ctx, sc, lt, D, env)
+    # animations run at SLOW x real time so each graphic builds calmly
+    scenes.RENDER[sc["type"]](ctx, sc, lt * SLOW, D * SLOW, env)
     ctx.pop_group_to_source()
     ctx.paint_with_alpha(1 - ease_in_out(out))
     header(ctx, spec, tl, t, idx)
+    last = idx == len(tl.scenes) - 1
+    spoken_end = tl.subs[idx][-1][1] if tl.subs[idx] else D - END_HOLD
     if spec.META.get("subtitles", True) and sc["type"] != "outro":
-        subtitles(ctx, tl, idx, lt)
+        if not (last and lt > spoken_end + 0.3):
+            subtitles(ctx, tl, idx, lt)
+    if last and sc["type"] != "outro":
+        end_card(ctx, env, prog(lt, spoken_end + 0.35, 0.6))
     return surf
+
+
+def end_card(ctx, env, p):
+    """Closing disclaimer, shown at the bottom once the final point has been made."""
+    if p <= 0: return
+    q = ease_out(p)
+    disc = env["disclaimer"]
+    lines = wrap(ctx, disc, SANS, 27, X1 - X0 - 120)
+    h = 74 + len(lines) * 36
+    y = SAFE_BOTTOM - h + (1 - q) * 30
+    card(ctx, X0, y, X1 - X0, h, q, r=22)
+    swan.draw(ctx, X0 + 26, y + 20, 48, body=INK, beak=ACCENT, eye=CARD)
+    text(ctx, "THE FINE PRINT", X0 + 90, y + 50, MONO, 21, env["accent"], q, tracking=0.1)
+    for k, ln in enumerate(lines):
+        text(ctx, ln, X0 + 90, y + 88 + k * 36, SANS, 27, INK, q * 0.85)
 
 
 def draw_cover(spec, tl=None):

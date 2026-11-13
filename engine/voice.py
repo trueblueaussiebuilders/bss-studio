@@ -1,6 +1,7 @@
 """Voiceover: Kokoro (free, local) by default; ElevenLabs when voice.json says so and the secrets are set."""
 import json, os, re, subprocess, urllib.request, urllib.error
 import numpy as np
+from engine.style import END_HOLD
 
 SR = 24000
 KOKORO_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/"
@@ -133,7 +134,7 @@ def narrate(lines, gap=None):
             sub.append((round(t, 3), round(t + len(a) / SR, 3), sent)); t += len(a) / SR
         clip = np.concatenate(chunks) if chunks else np.zeros(1, dtype=np.float32)
         last = k == len(split) - 1
-        durs.append(round(max(2.6, t + (1.6 if last else gap)), 3))
+        durs.append(round(max(3.2, t + (END_HOLD if last else gap)), 3))
         subs.append(sub); clips.append(clip)
     total = sum(durs)
     track = np.zeros(int((total + 0.5) * SR), dtype=np.float32)

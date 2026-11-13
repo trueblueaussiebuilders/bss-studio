@@ -17,7 +17,7 @@
 - **Category:** Education (not "Financial service" or "Financial adviser")
 - **Bio:**
   ```
-  ASX mining speccies, explained in 45 sec
+  ASX mining speccies, explained in 60 sec
   Mon · Wed · Fri: one stock | Sun: the big picture
   General info only, not financial advice
   ```

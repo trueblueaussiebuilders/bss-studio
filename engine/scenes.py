@@ -303,6 +303,45 @@ def timeline(ctx, sc, t, D, env):
             text(ctx, ln, tx, y + 64 + k * 48, SANS_MED, 40, INK if not done else MUTED, p)
 
 
+# ---------------------------------------------------------------- catalysts (what's coming and why it matters)
+def catalysts(ctx, sc, t, D, env):
+    top = heading(ctx, sc, t, env)
+    zx, zy, zw, zh = zone(top)
+    items = sc["items"][:4]
+    n = len(items)
+    gap = 20
+    blocks = []
+    for it in items:
+        why = wrap(ctx, it.get("why", ""), SANS, 34, zw - 120)[:2]
+        title = wrap(ctx, it["title"], SANS_SEMI, 42, zw - 120)[:2]
+        blocks.append((title, why, 78 + len(title) * 50 + len(why) * 44 + 16))
+    total = sum(b[2] for b in blocks) + gap * (n - 1)
+    y = zy + max(0, (zh - total) * 0.35)
+    spread = max(0.6, D * 0.62 / n)
+    for i, (it, (title, why, h)) in enumerate(zip(items, blocks)):
+        st = 0.45 + i * spread
+        p = ease_out(prog(t, st, 0.6))
+        if p > 0:
+            active = i == n - 1 or t < 0.45 + (i + 1) * spread
+            yy = y + (1 - p) * 36
+            rrect(ctx, zx, yy, zw, h, 24); rgba(ctx, CARD, 0.92 * p); ctx.fill_preserve()
+            rgba(ctx, env["accent"] if active else LINE, p); ctx.set_line_width(3 if active else 2); ctx.stroke()
+            text(ctx, f"{i + 1}", zx + 40, yy + 74, SERIF, 64, env["accent"] if active else MUTED, p, align="center")
+            tx = zx + 90
+            text(ctx, it.get("when", "").upper(), tx, yy + 44, MONO, 24, env["accent"], p, tracking=0.06)
+            if it.get("status"):
+                sw = width(ctx, it["status"].upper(), MONO, 20, 0.06) + 28
+                rrect(ctx, zx + zw - sw - 24, yy + 20, sw, 36, 18); rgba(ctx, INK, 0.12 * p); ctx.fill()
+                text(ctx, it["status"].upper(), zx + zw - sw / 2 - 24, yy + 45, MONO, 20, INK, p, align="center", tracking=0.06)
+            for k, ln in enumerate(title):
+                text(ctx, ln, tx, yy + 100 + k * 50, SANS_SEMI, 42, INK, p)
+            q = ease_out(prog(t, st + 0.35, 0.6))
+            wy = yy + 100 + len(title) * 50 + 6
+            for k, ln in enumerate(why):
+                text(ctx, ln, tx, wy + k * 44, SANS, 34, MUTED, q)
+        y += h + gap
+
+
 # ---------------------------------------------------------------- versus (two stacked cards)
 def _bullet_card(ctx, x, y, w, title, pts, col, glyph, t, start, spread):
     p = ease_out(prog(t, start, 0.5))
@@ -567,4 +606,4 @@ def outro(ctx, sc, t, D, env):
 
 
 RENDER = {"hook": hook, "map": map_scene, "stats": stats, "bars": bars, "timeline": timeline, "versus": versus,
-          "list": listing, "line": line, "intercept": intercept, "stack": stack, "big": big, "outro": outro}
+          "list": listing, "line": line, "catalysts": catalysts, "intercept": intercept, "stack": stack, "big": big, "outro": outro}

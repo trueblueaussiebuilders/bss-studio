@@ -5,7 +5,7 @@
 import datetime as dt, importlib.util, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TYPES = {"hook", "map", "stats", "bars", "timeline", "versus", "list", "line", "intercept", "stack", "big", "outro"}
+TYPES = {"hook", "map", "stats", "bars", "timeline", "catalysts", "versus", "list", "line", "intercept", "stack", "big", "outro"}
 
 # Words that turn information into a recommendation or hype. Keep the account factual.
 BANNED = [
@@ -47,12 +47,21 @@ def main(folder):
     meta, scenes, cap = m.META, m.SCENES, m.CAPTION
     if not slug.startswith(meta.get("date", "?")): err.append(f"folder name should start with META date {meta.get('date')}")
     if meta.get("kind") not in ("stock", "macro"): err.append("META kind must be 'stock' or 'macro'")
-    if scenes[0]["type"] != "hook" or scenes[-1]["type"] != "outro": err.append("first scene must be hook, last must be outro")
+    types = [sc.get("type") for sc in scenes]
+    if types[0] != "hook": err.append("first scene must be the hook")
+    if "outro" in types: err.append("no outro scene: end on the final point (the disclaimer card is added automatically)")
+    if meta.get("kind") == "stock":
+        if "catalysts" not in types: err.append("stock videos need a 'catalysts' scene")
+        if "versus" not in types: err.append("stock videos need a 'versus' (both sides) scene")
+    first = re.split(r"(?<=[.!?])\s+", scenes[0].get("say", "").strip())[0]
+    if len(first.split()) > 14: warn.append(f"hook opener is {len(first.split())} words; keep the first sentence punchy (<= 12)")
+    if re.search(r"not (financial )?advice|follow for", " ".join(sc.get("say", "") for sc in scenes), re.I):
+        err.append("don't say the disclaimer or a follow line in the narration; the end card covers it")
     for i, sc in enumerate(scenes):
         if sc.get("type") not in TYPES: err.append(f"scene {i}: unknown type {sc.get('type')}")
         if not sc.get("say"): err.append(f"scene {i}: no narration ('say')")
     words = sum(len(sc.get("say", "").split()) for sc in scenes)
-    if not 90 <= words <= 135: warn.append(f"narration is {words} words; aim for 100-125 (~45s)")
+    if not 115 <= words <= 140: warn.append(f"narration is {words} words; aim for 120-135 (~55s)")
     blob = "\n".join(t for sc in scenes for t in texts(sc)) + "\n" + cap
     for pat in BANNED:
         for hit in re.finditer(pat, blob, flags=re.I):

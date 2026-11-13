@@ -10,6 +10,8 @@ TITLE_Y = 330                # section label baseline; headline sits under it
 ZONE = (72, 600, 936, 740)   # graphic zone x, y, w, h
 SUB_Y = 1405                 # subtitle block top
 SAFE_BOTTOM = 1530
+SLOW = 0.78                  # animation speed vs real time (lower = calmer builds)
+END_HOLD = 3.6               # seconds held on the last scene after the narration ends (disclaimer card)
 
 def hexrgb(h):
     h = h.lstrip("#"); return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))

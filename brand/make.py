@@ -66,7 +66,7 @@ def main():
     for name, glyph, label in [("stocks", "W", "Speccies"), ("sunday", "S", "Sundays"), ("howto", "?", "How to read"),
                                ("fineprint", "§", "Fine print"), ("about", "swan", "About")]:
         highlight(a.out, name, glyph, label)
-    slide(a.out, 1, "Welcome", "ASX speccies, *explained* in 45 seconds.",
+    slide(a.out, 1, "Welcome", "ASX speccies, *explained* in under a minute.",
           ["Every Monday, Wednesday and Friday we break down one speculative ASX miner: what it owns, "
            "where it is, the numbers, and what's coming up.",
            "Every Sunday: one big-picture topic that moves the whole sector, like gold prices, mining costs or China."],

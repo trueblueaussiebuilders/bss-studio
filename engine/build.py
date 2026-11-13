@@ -42,9 +42,9 @@ def _guess_timeline(spec):
         sents = [s for s in __import__("re").split(r"(?<=[.!?])\s+", sc.get("say", "").strip()) if s]
         t, sub = 0.15, []
         for s in sents:
-            d = len(s.split()) / 2.8; sub.append((t, t + d, s)); t += d + 0.28
-        durs.append(max(2.6, t + 0.35)); subs.append(sub)
-    durs[-1] += 1.2
+            d = len(s.split()) / 2.9; sub.append((t, t + d, s)); t += d + 0.42
+        durs.append(max(3.2, t + 1.0)); subs.append(sub)
+    durs[-1] += 2.6
     return render.Timeline(durs, subs)
 
 

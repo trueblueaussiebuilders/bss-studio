@@ -1,10 +1,14 @@
 {
   "engine": "kokoro",
   "kokoro_voice": "af_heart",
-  "kokoro_speed": 1.05,
-  "sentence_gap": 0.28,
-  "kokoro": {"line_gap": 0.35},
-  "elevenlabs": {"line_gap": 0.3},
+  "kokoro_speed": 0.98,
+  "sentence_gap": 0.42,
+  "kokoro": {
+    "line_gap": 0.85
+  },
+  "elevenlabs": {
+    "line_gap": 0.8
+  },
   "model": "eleven_multilingual_v2",
   "elevenlabs_voices": [],
   "_note": "engine: 'kokoro' (free, runs in GitHub Actions) or 'elevenlabs' (needs ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID secrets). Kokoro voices worth trying: af_heart (default, clearest), am_michael, bf_emma, bm_george."
