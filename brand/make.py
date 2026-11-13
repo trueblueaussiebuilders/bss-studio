@@ -63,11 +63,11 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--out", default="brand/out"); a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     profile(a.out)
-    for name, glyph, label in [("stocks", "W", "Speccies"), ("sunday", "S", "Sundays"), ("howto", "?", "How to read"),
+    for name, glyph, label in [("stocks", "W", "Junior miners"), ("sunday", "S", "Sundays"), ("howto", "?", "How to read"),
                                ("fineprint", "§", "Fine print"), ("about", "swan", "About")]:
         highlight(a.out, name, glyph, label)
-    slide(a.out, 1, "Welcome", "ASX speccies, *explained* in under a minute.",
-          ["Every Monday, Wednesday and Friday we break down one speculative ASX miner: what it owns, "
+    slide(a.out, 1, "Welcome", "ASX junior miners, *explained* in under a minute.",
+          ["Every Monday, Wednesday and Friday we break down one ASX junior miner: what it owns, "
            "where it is, the numbers, and what's coming up.",
            "Every Sunday: one big-picture topic that moves the whole sector, like gold prices, mining costs or China."],
           "Swipe for more")
@@ -80,6 +80,9 @@ def main():
            "and it isn't a recommendation to buy or sell anything.",
            "Speculative stocks are high risk and can lose most or all of their value. We don't hold positions in "
            "companies we feature. Do your own research and consider a licensed adviser."])
+    from PIL import Image  # carousel posts must be JPEG
+    for n in (1, 2, 3):
+        Image.open(os.path.join(a.out, f"pinned_{n}.png")).convert("RGB").save(os.path.join(a.out, f"pinned_{n}.jpg"), quality=92)
     print("brand kit ->", a.out)
 
 

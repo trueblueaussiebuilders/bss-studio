@@ -13,15 +13,15 @@
 ## Profile
 
 - **Profile picture:** `profile_light.png` (black swan on paper). It stands out against the dark Reels grid. `profile_dark.png` is the alternative.
-- **Name field (searchable):** `Black Swan Stocks | ASX speccies`
+- **Name field (searchable):** `Black Swan Stocks | ASX junior miners`
 - **Category:** Education (not "Financial service" or "Financial adviser")
 - **Bio:**
   ```
-  ASX mining speccies, explained in 60 sec
+  ASX junior miners, explained in 60 sec
   Mon · Wed · Fri: one stock | Sun: the big picture
   General info only, not financial advice
   ```
-- **Highlights:** post each `highlight_*.png` as a story, then save to a highlight named Speccies, Sundays, How to read, Fine print, About.
+- **Highlights:** post each `highlight_*.png` as a story, then save to a highlight named Junior miners, Sundays, How to read, Fine print, About.
 - **Pinned post:** `pinned_1.png` to `pinned_3.png` as one carousel. Pin it to the top of the grid.
 
 ## Hashtags

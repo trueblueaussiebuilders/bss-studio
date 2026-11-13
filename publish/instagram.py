@@ -65,16 +65,46 @@ def post(video_url, caption, cover_url=None):
     return mid
 
 
+def wait(cid):
+    for _ in range(60):
+        st = call("GET", cid, {"fields": "status_code,status"})
+        code = st.get("status_code"); print("status", cid, code)
+        if code == "FINISHED": return
+        if code in ("ERROR", "EXPIRED"): sys.exit(f"container failed: {st}")
+        time.sleep(5)
+    sys.exit("timed out waiting for Instagram to process the media")
+
+
+def carousel(image_urls, caption):
+    """Image carousel (JPEGs only, 2 to 10 images)."""
+    uid = os.environ["IG_USER_ID"].strip()
+    kids = []
+    for u in image_urls:
+        c = call("POST", f"{uid}/media", {"image_url": u, "is_carousel_item": "true"})
+        wait(c["id"]); kids.append(c["id"])
+    c = call("POST", f"{uid}/media", {"media_type": "CAROUSEL", "children": ",".join(kids), "caption": caption})
+    wait(c["id"])
+    pub = call("POST", f"{uid}/media_publish", {"creation_id": c["id"]})
+    mid = pub["id"]
+    print("published", mid, call("GET", mid, {"fields": "permalink"}).get("permalink", ""))
+    return mid
+
+
 def main():
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("post"); p.add_argument("--video-url", required=True); p.add_argument("--caption-file", required=True)
     p.add_argument("--id-file"); p.add_argument("--cover-url")
+    cp = sub.add_parser("carousel"); cp.add_argument("--image-urls", nargs="+", required=True)
+    cp.add_argument("--caption-file", required=True); cp.add_argument("--id-file")
     r = sub.add_parser("refresh"); r.add_argument("--out", required=True)
     sub.add_parser("check")
     d = sub.add_parser("delete"); d.add_argument("media_ids", nargs="+")
     a = ap.parse_args()
     if a.cmd == "post":
         mid = post(a.video_url, open(a.caption_file).read().strip(), a.cover_url)
+        if a.id_file: open(a.id_file, "w").write(mid)
+    elif a.cmd == "carousel":
+        mid = carousel(a.image_urls, open(a.caption_file).read().strip())
         if a.id_file: open(a.id_file, "w").write(mid)
     elif a.cmd == "refresh":
         if token().startswith("EA"):

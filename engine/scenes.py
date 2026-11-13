@@ -590,7 +590,7 @@ def outro(ctx, sc, t, D, env):
     swan.draw(ctx, W / 2 - s / 2, 330 + (1 - p) * 30, s, body=INK, beak=ACCENT, eye=BG)
     q = ease_out(prog(t, 0.3, 0.6))
     text(ctx, "BLACK SWAN STOCKS", W / 2, 720, SANS_SEMI, 48, INK, q, align="center", tracking=0.2)
-    text(ctx, sc.get("line1", "ASX speccies, explained. Mon · Wed · Fri"), W / 2, 786, MONO, 28, MUTED, q, align="center")
+    text(ctx, sc.get("line1", "ASX junior miners, explained. Mon · Wed · Fri"), W / 2, 786, MONO, 28, MUTED, q, align="center")
     text(ctx, sc.get("line2", "Sunday: the big picture"), W / 2, 830, MONO, 28, MUTED, q, align="center")
     r_ = ease_out(prog(t, 0.6, 0.6))
     bx, by, bw = X0, 900, X1 - X0

@@ -1,0 +1,78 @@
+name: Post image carousel
+
+# Posts the JPEGs in a folder (default: launch/) as one Instagram carousel, with that folder's caption.txt.
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Folder with 2-10 JPEGs (posted in name order) and caption.txt"
+        type: string
+        default: "launch"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: post
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.list.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          mkdir -p site
+          files=""
+          for f in $(ls "${{ inputs.folder }}"/*.jpg | sort); do
+            name="${{ github.run_id }}-$(basename "$f")"
+            cp "$f" "site/$name"; files="$files $name"
+          done
+          echo "Black Swan Stocks" > site/index.html
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  host:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  publish:
+    needs: [build, host]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for images
+        id: urls
+        run: |
+          urls=""
+          for f in ${{ needs.build.outputs.files }}; do
+            u="${{ needs.host.outputs.page_url }}$f"
+            for i in $(seq 1 30); do curl -sfI "$u" | grep -qi "content-type: image/jpeg" && break; sleep 10; done
+            urls="$urls $u"
+          done
+          echo "urls=$urls" >> "$GITHUB_OUTPUT"
+      - name: Post carousel
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        run: python3 publish/instagram.py carousel --image-urls ${{ steps.urls.outputs.urls }} --caption-file "${{ inputs.folder }}/caption.txt" --id-file media_id.txt
+      - name: Log
+        run: |
+          echo "carousel:${{ inputs.folder }}  $(date -u +%F)  $(cat media_id.txt)" >> posted.txt
+          git config user.name "bss-bot"; git config user.email "bss-bot@users.noreply.github.com"
+          git add posted.txt; git commit -m "Posted carousel ${{ inputs.folder }}"; git pull --rebase && git push

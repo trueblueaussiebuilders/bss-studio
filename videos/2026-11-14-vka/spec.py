@@ -2,7 +2,7 @@
 
 META = {
     "kind": "stock",
-    "date": "2026-11-16",
+    "date": "2026-11-14",
     "ticker": "VKA",
     "company": "Viking Mines",
     "commodity": "tungsten",

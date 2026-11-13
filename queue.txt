@@ -1,2 +1,4 @@
 # One slug per line (folder under videos/). The post job only posts a slug whose date is today (Melbourne).
-2026-11-16-vka
+2026-11-14-lm1
+2026-11-14-alm
+2026-11-14-vka
