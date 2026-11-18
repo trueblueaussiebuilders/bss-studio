@@ -148,6 +148,13 @@ jobs:
           git commit -m "Posted ${{ needs.build.outputs.slug }}"
           git pull --rebase && git push
 
+      - name: Verify hosted video (dry run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          python3 publish/instagram.py verify-hosted \
+            --video-url "${{ steps.url.outputs.url }}" \
+            --video-file "build/${{ needs.build.outputs.slug }}.mp4"
+
       - name: Dry run summary
         if: ${{ github.event.inputs.dry_run == 'true' }}
         run: echo "Dry run OK. Video hosted at ${{ steps.url.outputs.url }} (not posted)." >> "$GITHUB_STEP_SUMMARY"
