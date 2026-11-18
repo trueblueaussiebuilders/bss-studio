@@ -25,7 +25,8 @@
     "\\bMtpa\\b": "million tonnes a year",
     "\\bktpa\\b": "thousand tonnes a year",
     "(\\d)\\s?%": "\\1 percent",
-    "\\bA\\$": ""
+    "\\bA\\$": "",
+    "\\bEPBC\\b": "E-P-B-C"
   },
   "ipa": {
     "Leeuwin": "lˈuːɪn",
@@ -57,6 +58,8 @@
     "Wodgina": "wɒdʒˈiːnə",
     "Norseman": "nˈɔːsmən",
     "Heemskirk": "hˈiːmzkɜːk",
-    "Zeehan": "zˈiːən"
+    "Zeehan": "zˈiːən",
+    "Whyalla": "waɪˈalə",
+    "Samphire": "sˈamfaɪə"
   }
 }
