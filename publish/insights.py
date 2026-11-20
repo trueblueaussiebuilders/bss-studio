@@ -23,10 +23,16 @@ MS_TO_S = {"avg_watch_time_s", "total_watch_time_s"}       # the API reports wat
 
 COLUMNS = ["slug", "posted", "media_id", "media_type", "permalink", "fetched_utc"] + list(REEL_METRICS.values())
 
-PERMISSION_HELP = ("The token can't read insights. In the Meta app (developers.facebook.com > your app > Use cases > "
-                   "Instagram API), add the 'instagram_business_manage_insights' permission (Instagram Login; "
-                   "'instagram_manage_insights' if the token starts with EA / Facebook Login), then generate a new token "
-                   "and update the IG_ACCESS_TOKEN secret.")
+def permission_help():
+    if ig.token().startswith("EA"):    # Facebook Login token (what this account uses as of Nov 2026)
+        return ("The token can read posts but not insights (error #10). It's a Facebook Login token, so in the Meta app "
+                "(developers.facebook.com > your app > Use cases > Instagram API / Facebook Login > Permissions) add "
+                "'instagram_manage_insights' (keep instagram_basic, instagram_content_publish, pages_show_list, "
+                "pages_read_engagement), then generate a new long-lived token with that permission ticked "
+                "(Graph API Explorer > Generate token) and replace the IG_ACCESS_TOKEN secret.")
+    return ("The token can read posts but not insights (error #10). In the Meta app (developers.facebook.com > your app > "
+            "Use cases > Instagram API > API setup with Instagram login) add 'instagram_business_manage_insights', "
+            "generate a new token and replace the IG_ACCESS_TOKEN secret.")
 
 
 def read_posted(path):
@@ -85,10 +91,16 @@ def collect(posted, log=print):
         row = dict(p, fetched_utc=now)
         try:
             info = ig.call("GET", p["media_id"], {"fields": "media_type,media_product_type,permalink,like_count,comments_count"})
-            row["media_type"] = info.get("media_product_type") or info.get("media_type", "")
-            row["permalink"] = info.get("permalink", "")
-            row["likes"], row["comments"] = info.get("like_count", ""), info.get("comments_count", "")
-            metrics = REEL_METRICS if row["media_type"] in ("REELS", "VIDEO", "") else CAROUSEL_METRICS
+        except ig.ApiError as e:
+            other_fail += 1
+            log(f"  {p['slug']} ({p['media_id']}): {str(e)[:240]}")
+            out.append(row); continue
+        # basic counts work without the insights permission, so they're kept even if /insights is refused
+        row["media_type"] = info.get("media_product_type") or info.get("media_type", "")
+        row["permalink"] = info.get("permalink", "")
+        row["likes"], row["comments"] = info.get("like_count", ""), info.get("comments_count", "")
+        metrics = REEL_METRICS if row["media_type"] in ("REELS", "VIDEO", "") else CAROUSEL_METRICS
+        try:
             for k, v in fetch_metrics(p["media_id"], list(metrics), log).items():
                 col = metrics[k]
                 row[col] = round(v / 1000, 2) if col in MS_TO_S else v
@@ -97,7 +109,7 @@ def collect(posted, log=print):
                 perm_fail += 1
             else:
                 other_fail += 1
-            log(f"  {p['slug']} ({p['media_id']}): {str(e)[:240]}")
+            log(f"  {p['slug']} ({p['media_id']}) insights: {str(e)[:240]}")
         out.append(row)
     return out, perm_fail, other_fail
 
@@ -111,8 +123,11 @@ def write_csv(rows, path, previous=None):
         w = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
         w.writeheader()
         for r in sorted(rows, key=lambda r: (r["posted"], r["slug"])):
-            if not any(r.get(c) not in (None, "") for c in REEL_METRICS.values()) and r["media_id"] in prev:
-                r = prev[r["media_id"]]
+            full = [c for c in REEL_METRICS.values() if c not in ("likes", "comments")]
+            p = prev.get(r["media_id"])
+            if p and not any(r.get(c) not in (None, "") for c in full):
+                if any(p.get(c) not in (None, "") for c in full) or not any(r.get(c) not in (None, "") for c in ("likes", "comments")):
+                    r = dict(p, **{c: r[c] for c in ("likes", "comments") if r.get(c) not in (None, "")})
             w.writerow({c: r.get(c, "") for c in COLUMNS})
 
 
@@ -123,15 +138,14 @@ def main():
     posted = read_posted(a.posted)
     print(f"{len(posted)} posted media in {a.posted}")
     rows, perm_fail, other_fail = collect(posted)
-    if posted and perm_fail == len(posted):
-        print(f"::error::{PERMISSION_HELP}")
-        sys.exit(1)
+    if posted and other_fail == len(posted):
+        sys.exit("no media could be read (token or account problem?): see the errors above")
     write_csv(rows, a.out, previous=a.out)
     ok = len(posted) - perm_fail - other_fail
-    print(f"wrote {a.out}: {ok}/{len(posted)} fetched" + (f", {perm_fail + other_fail} failed (kept previous numbers)" if ok < len(posted) else ""))
-    if posted and ok == 0:
-        sys.exit("no media could be read")
-
+    print(f"wrote {a.out}: full metrics for {ok}/{len(posted)}" + (f"; {perm_fail + other_fail} with likes/comments only or previous numbers" if ok < len(posted) else ""))
+    if perm_fail:
+        print(f"::error::{permission_help()}")
+        sys.exit(2)          # csv written (likes/comments), but insights need a permission: the workflow commits, then fails
 
 if __name__ == "__main__":
     main()

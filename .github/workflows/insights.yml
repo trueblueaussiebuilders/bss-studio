@@ -25,10 +25,17 @@ jobs:
           python-version: "3.11"
 
       - name: Fetch metrics for every posted media
+        id: fetch
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
-        run: python3 publish/insights.py --posted posted.txt --out insights.csv
+        # exit 2 = csv written (likes/comments) but the token lacks the insights permission: commit, then fail below
+        run: |
+          set +e
+          python3 publish/insights.py --posted posted.txt --out insights.csv
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          [ $rc -eq 0 ] || [ $rc -eq 2 ]
 
       - name: Summary
         run: |
@@ -47,4 +54,10 @@ jobs:
           if git diff --cached --quiet; then echo "no change"; exit 0; fi
           git commit -m "Insights $(date -u +%F)"
           for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done
+          exit 1
+
+      - name: Fail if the insights permission is missing
+        if: steps.fetch.outputs.rc == '2'
+        run: |
+          echo "::error::Only likes and comments were saved. The token needs the Instagram insights permission (see the error above)."
           exit 1

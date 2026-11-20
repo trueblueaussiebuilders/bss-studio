@@ -25,8 +25,8 @@ class FakeAPI:
         self.reject, self.perm, self.asked = set(reject), perm, []
 
     def __call__(self, method, path, params, versioned=True):
-        if self.perm: raise NO_PERM
         mid = path.split("/")[0]
+        if self.perm and "/insights" in path: raise NO_PERM
         if "/" not in path:
             kind = "CAROUSEL_ALBUM" if mid == "200" else "REELS"
             return {"media_type": kind, "media_product_type": "FEED" if kind == "CAROUSEL_ALBUM" else "REELS",
@@ -63,13 +63,21 @@ def main():
     ig.call = FakeAPI(perm=True)
     old = sys.argv; sys.argv = ["insights.py", "--posted", posted, "--out", out]
     try:
-        ins.main(); check("permission failure exits with the Meta permission to add", False)
+        ins.main(); check("insights permission missing: exits 2 after writing the csv", False)
     except SystemExit as e:
-        check("permission failure exits with the Meta permission to add", e.code == 1)
+        check("insights permission missing: exits 2 after writing the csv", e.code == 2)
     finally:
         sys.argv = old
     saved2 = list(csv.DictReader(open(out)))
-    check("a failed run doesn't wipe insights.csv", saved2 == saved)
+    keep = ("views", "reach", "saves", "avg_watch_time_s")
+    check("a run without the insights permission doesn't wipe earlier metrics",
+          [[r[c] for c in keep] for r in saved2] == [[r[c] for c in keep] for r in saved] and saved2[0]["views"] == "7")
+
+    fresh = os.path.join(d, "fresh.csv")
+    got, perm, other = ins.collect(rows, log=lambda *a: None)
+    ins.write_csv(got, fresh, previous=fresh)
+    first = list(csv.DictReader(open(fresh)))
+    check("without the permission, likes and comments still land", perm == 2 and all(r["likes"] == "5" and r["comments"] == "1" and r["views"] == "" for r in first))
 
     class Partial(FakeAPI):
         def __call__(self, method, path, params, versioned=True):
