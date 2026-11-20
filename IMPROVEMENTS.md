@@ -8,6 +8,13 @@ One tested improvement ships each run (see `tools/CLAUDE_TASK.md` / the schedule
 
 ## Changelog
 
+### 2026-11-20 (evening, Mathew's request): A real backing track on every video
+- **What changed:** `engine/audio.py` gains `backtune()`, a generated backing track in three styles: **lofi** (84 bpm, swung kick/rim/hats, electric piano, warm low-pass and faint vinyl), **pulse** (104 bpm, soft four-on-the-floor, offbeat hats, 16th-note arpeggio, pulsing bass) and **ambient** (76 bpm, pad, plucks, slow heartbeat kick). Four minor-leaning chord loops and a transpose of -3 to +3 semitones. Keys and bass open the first bar and the beat drops in on bar 2. The style, loop and key are picked from the slug (crc32), so videos vary but rebuilds are identical; `META["music"]` can name a style or be `False`. The track now sits about 16 dB under the voice while speaking (was ~-21 dB of soft low sine pad that phone speakers barely reproduce) and ~14 dB under in pauses. The build prints the choice (`music: pulse (loop 1, transpose +2)`).
+- **Why:** Mathew asked for a proper backtune like the True Blue Aussie Builders videos ("doesn't have to be the same music"). The old pad was nearly inaudible on a phone.
+- **Tests:** `python3 tools/test_audio.py`: all 12 style/loop combinations render with no NaN or clipping and a steady level, the pick is deterministic and covers all styles, `music: False` leaves the voice untouched, and the track measures -15.4 dB under a test voice. Full builds: 2026-11-20-lex (pulse, 52.1s, -15.3 LUFS, true peak -1.3 dBFS; measured -15.8 dB under the real voice, -14.0 dB in gaps) and 2026-11-18-age (ambient, 58.4s, -15.1 LUFS, true peak -1.4 dBFS). Video frames unchanged; durations unchanged.
+- **First video:** the next one (Sunday 22 Nov 2026).
+- **Files:** `engine/audio.py`, `engine/build.py`, `tools/test_audio.py`, `CONTENT.md` (documents `META["music"]`), `BRAND.md` (new Sound section), `README.md`.
+
 ### 2026-11-20: Daily insights workflow (`insights.csv`)
 - **What changed:** new `.github/workflows/insights.yml` (daily at 20:17 UTC, ~7:17am Melbourne, plus workflow_dispatch) runs `publish/insights.py`, which reads every media ID in `posted.txt`, pulls each post's basic counts (likes, comments, permalink, type) and its `/insights` metrics (views, reach, likes, comments, shares, saved, follows, profile_visits, total_interactions, ig_reels_avg_watch_time, ig_reels_video_view_total_time; watch time converted to seconds), and commits `insights.csv` (one row per post, latest snapshot) to main. Metrics the API rejects for a media type are skipped one by one rather than failing the run; carousels aren't asked for Reels-only metrics. A post that fails one day keeps its previous numbers. If the token lacks the insights permission, the run still saves likes and comments, commits, then fails with the exact permission to add.
 - **Why:** backlog #1. Every other improvement should be ranked on real retention data instead of guesses.
@@ -31,7 +38,8 @@ One tested improvement ships each run (see `tools/CLAUDE_TASK.md` / the schedule
 3. **Hook number animates in + faster first cut:** count-up on the hook's headline figure and a cut to scene 2 by ~2.5s. Impact: scroll-stop in the first 1.5s.
 4. **Insights history:** append a dated row per post per day to `insights_history.csv` so views can be compared at the same age (e.g. 48 hours) instead of latest totals, which favour older posts. Impact: fair comparisons once the permission is on.
 5. **Price-history line with announcements marked:** a real 6-12 month share-price `line` scene with dated announcement markers (needs a reliable price source in the build). Impact: shows what news has moved the stock before, without predicting.
-6. **Subtle sound design:** soft tick on number reveals and bar growth, ducked under the voice. Impact: retention through the middle third.
+6. **Subtle sound design:** soft tick on number reveals and bar growth, and a short riser into the catalysts scene, both ducked under the voice. Builds on the new backing track. Impact: retention through the middle third.
+8. **Match the music to the topic:** let Sunday explainers default to ambient and stock videos to lofi/pulse, or pick by commodity, once insights show whether style affects watch time. Impact: small, data-led.
 7. **"What happened next" follow-ups:** a short format revisiting a featured stock after its catalyst lands (e.g. LEX's scoping study, Dec qtr 2026). Impact: series value, gives people a reason to follow.
 
 ## Tried and dropped

@@ -44,7 +44,7 @@ See `CONTENT.md` for the spec format and editorial rules, and `BRAND.md` for the
 
 ## Files
 
-- `engine/` renderer: `scenes.py` (all scene types), `render.py` (header, subtitles, cover), `voice.py` (Kokoro/ElevenLabs), `audio.py` (generated music bed, ducked under the voice), `geo.py` (maps)
+- `engine/` renderer: `scenes.py` (all scene types), `render.py` (header, subtitles, cover), `voice.py` (Kokoro/ElevenLabs), `audio.py` (generated backing track: lofi, pulse or ambient, picked per video and ducked under the voice; `tools/test_audio.py` tests it), `geo.py` (maps)
 - `assets/fonts` Inter Tight, Instrument Serif, JetBrains Mono (all SIL OFL). `assets/geo` Natural Earth outlines via world-atlas
 - `publish/insights.py` writes `insights.csv` (one row per post, latest numbers; `tools/test_insights.py` tests it offline)
 - `exclusions.txt` tickers never to feature (holdings and conflicts). `featured.txt` everything already featured (no repeats within 180 days)

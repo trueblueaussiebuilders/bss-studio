@@ -90,7 +90,9 @@ def main():
     TL = render.Timeline(durs, subs)
     print(f"[{slug}] duration {TL.duration:.1f}s, {len(TL.scenes)} scenes")
     music = SPEC.META.get("music", True)
-    mixed = audio.mix(track, TL.starts, mood=SPEC.META.get("mood", "calm"), music=music, sfx=music)
+    choice = audio.pick(slug, music)
+    if choice: print(f"[{slug}] music: {choice[0]} (loop {choice[1]}, transpose {choice[2]:+d})")
+    mixed = audio.mix(track, TL.starts, mood=SPEC.META.get("mood", "calm"), music=music, sfx=music is not False, slug=slug)
 
     with tempfile.TemporaryDirectory() as tmp:
         sf.write(f"{tmp}/audio.wav", mixed, voice.SR)

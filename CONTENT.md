@@ -30,6 +30,8 @@ CAPTION = """..."""
 SOURCES = ["https://...", ...]
 ```
 
+Optional `META["music"]`: every video gets a generated backing track ducked under the voice. Leave it out (or `True`) and the engine picks a style, key and chord loop from the slug, so videos vary but a rebuild sounds the same. Set `"lofi"` (laid-back beat, electric piano), `"pulse"` (steady four-on-the-floor, arpeggio) or `"ambient"` (pad, plucks, slow heartbeat kick) to choose one, or `False` for voice only.
+
 `*word*` in any title turns that word into red italic. Every scene has `say` (narration); most have `label` (small section label) and `title`.
 
 | type | data | use it for |

@@ -27,3 +27,7 @@
 ## Hashtags
 
 Rotate 6 to 8 per post: `#ASX #ASXstocks #smallcaps #mining #miningstocks #juniorminers` plus the commodity (`#gold #copper #lithium #uranium #tungsten #rareearths #criticalminerals`) and always `#blackswanstocks`.
+
+## Sound
+
+Voice first. Under it, a generated backing track (no licensing): one of three styles, lofi (84 bpm), pulse (104 bpm) or ambient (76 bpm), in a minor-leaning four-chord loop. It sits about 16 dB under the voice while it's speaking and rises a little in the pauses. Keys and bass open the first bar and the beat drops in on bar 2. Soft whooshes on scene changes. The final mix is loudness-normalised to -14 LUFS, true peak -1.5 dBFS.
