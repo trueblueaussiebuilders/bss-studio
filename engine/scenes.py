@@ -92,30 +92,46 @@ def _pin(ctx, x, y, col, p, t, pulse=True, big=True):
     ctx.arc(x, y, r, 0, 2 * math.pi); rgba(ctx, col, p); ctx.fill()
 
 
+MAP_ZOOM = 1.1   # scene-time units (x SLOW, ~1.4s real) for the opening Australia -> region zoom
+
+
 def map_scene(ctx, sc, t, D, env):
     top = heading(ctx, sc, t, env)
     zx, zy, zw, zh = zone(top)
     bbox = geo.resolve_region(sc.get("region", "AU"))
-    proj = geo.Projection(bbox, (zx, zy, zw, zh), pad=10)
+    rect = (zx, zy, zw, zh)
+    final = geo.Projection(bbox, rect, pad=10)
+    # opening zoom: start on Australia (or the continent around an overseas region) and ease into the region
+    src = None if sc.get("zoom", True) is False else geo.zoom_context(bbox, sc.get("zoom_from"))
+    e = 1.0
+    if src:
+        e = ease_in_out(prog(t, 0.1, MAP_ZOOM))
+        proj = final if e >= 1 else geo.camera(geo.Projection(src, rect, pad=10), final, e)
+        off = MAP_ZOOM - 0.6          # pins, links and labels arrive as the zoom lands (no dead frames)
+    else:
+        proj, off = final, 0.0
+    tt = t - off
+    view = geo.view_bbox(proj, rect) if e < 1 else bbox
     pins = sc.get("pins", [])
     focus = next((p for p in pins if p.get("kind", "project") == "project"), pins[0] if pins else None)
-    fx, fy = proj(focus["lon"], focus["lat"]) if focus else (zx + zw / 2, zy + zh / 2)
-    # slow push-in around the project
-    z = 1 + 0.06 * ease_in_out(prog(t, 0, D))
+    fx, fy = final(focus["lon"], focus["lat"]) if focus else (zx + zw / 2, zy + zh / 2)
+    # slow push-in around the project (after the zoom)
+    z = 1 + 0.06 * ease_in_out(prog(t, off, D - off))
     ctx.push_group()
     ctx.save()
     ctx.rectangle(0, zy - 20, W, zh + 40); ctx.clip()
     ctx.translate(fx, fy); ctx.scale(z, z); ctx.translate(-fx, -fy)
-    rp = ease_out(prog(t, 0.15, 1.3))
+    rp = ease_out(prog(t, 0.0, 0.6)) if src else ease_out(prog(t, 0.15, 1.3))
     ctx.save()
-    ctx.arc(fx, fy, 40 + rp * 1600, 0, 2 * math.pi); ctx.clip()
-    rings = geo.rings_in(bbox)
+    rx, ry = proj(*((focus["lon"], focus["lat"]) if focus else (proj.lo, proj.la)))
+    ctx.arc(rx, ry, 40 + rp * 1900, 0, 2 * math.pi); ctx.clip()
+    rings = geo.rings_in(view)
     for name, ring in rings:
         _ring_path(ctx, ring, proj)
         hl = name in sc.get("highlight", ["Australia"])
         rgba(ctx, INK, 0.075 if hl else 0.035); ctx.fill_preserve()
         rgba(ctx, INK, 0.42 if hl else 0.16); ctx.set_line_width(2 if hl else 1.2); ctx.stroke()
-    if bbox[0] < 154 and bbox[2] > 112 and bbox[1] < -10 and bbox[3] > -44 and sc.get("states", True):
+    if view[0] < 154 and view[2] > 112 and view[1] < -10 and view[3] > -44 and sc.get("states", True):
         ctx.save()
         for name, ring in rings:
             if name == "Australia": _ring_path(ctx, ring, proj)
@@ -127,10 +143,17 @@ def map_scene(ctx, sc, t, D, env):
             ctx.stroke()
         ctx.set_dash([])
         ctx.restore()
+    if src and e < 1:
+        q = ease_out(prog(t, 0.05, 0.35)) * (1 - prog(t, 0.1 + MAP_ZOOM * 0.7, MAP_ZOOM * 0.3))
+        bx0, by0 = proj(bbox[0], bbox[3]); bx1, by1 = proj(bbox[2], bbox[1])
+        ctx.rectangle(bx0, by0, bx1 - bx0, by1 - by0); rgba(ctx, env["accent"], 0.95 * q); ctx.set_line_width(3); ctx.stroke()
+        if focus:
+            px, py = proj(focus["lon"], focus["lat"])
+            ctx.new_path(); ctx.arc(px, py, 7, 0, 2 * math.pi); rgba(ctx, env["accent"], q); ctx.fill()
     for k, an in enumerate(sc.get("areas", [])):
         poly = geo.AREAS.get(an)
         if not poly: continue
-        q = ease_out(prog(t, 0.5 + 0.15 * k, 0.8))
+        q = ease_out(prog(tt, 0.5 + 0.15 * k, 0.8))
         _ring_path(ctx, poly, proj)
         rgba(ctx, env["accent"], 0.10 * q); ctx.fill_preserve()
         ctx.set_dash([10, 6]); rgba(ctx, env["accent"], 0.75 * q); ctx.set_line_width(2.5); ctx.stroke(); ctx.set_dash([])
@@ -138,7 +161,7 @@ def map_scene(ctx, sc, t, D, env):
         text(ctx, an.upper(), cx_, cy_ + 70, MONO, 24, env["accent"], q, align="center", tracking=0.2)
     ctx.restore()
     if sc.get("context", True):
-        q = ease_out(prog(t, 0.8, 0.8))
+        q = ease_out(prog(tt, 0.8, 0.8))
         taken = [proj(p_["lon"], p_["lat"]) for p_ in pins]
         for nm, lo, la in geo.TOWNS:
             if not (bbox[0] < lo < bbox[2] and bbox[1] < la < bbox[3]): continue
@@ -152,13 +175,13 @@ def map_scene(ctx, sc, t, D, env):
     for i, ln in enumerate(sc.get("links", [])):
         a_, b_ = named.get(ln["from"]), named.get(ln["to"])
         if not a_ or not b_: continue
-        p = ease_in_out(prog(t, 1.4 + i * 0.3, 0.9))
+        p = ease_in_out(prog(tt, 1.4 + i * 0.3, 0.9))
         if p <= 0: continue
         x0, y0 = proj(a_["lon"], a_["lat"]); x1_, y1_ = proj(b_["lon"], b_["lat"])
         ctx.set_dash([10, 8]); rgba(ctx, INK, 0.7); ctx.set_line_width(2.5)
         ctx.move_to(x0, y0); ctx.line_to(lerp(x0, x1_, p), lerp(y0, y1_, p)); ctx.stroke(); ctx.set_dash([])
         lab = ln.get("label") or f"~{geo.km_between((a_['lon'], a_['lat']), (b_['lon'], b_['lat'])):,.0f} km"
-        q = ease_out(prog(t, 1.9 + i * 0.3, 0.5))
+        q = ease_out(prog(tt, 1.9 + i * 0.3, 0.5))
         mx, my = (x0 + x1_) / 2, (y0 + y1_) / 2
         w_ = width(ctx, lab, MONO_BOLD, 24) + 28
         rrect(ctx, mx - w_ / 2, my - 22, w_, 44, 22); rgba(ctx, INK, q); ctx.fill()
@@ -168,10 +191,10 @@ def map_scene(ctx, sc, t, D, env):
         kind = pn.get("kind", "project")
         col = env["accent"] if kind == "project" else (env["commodity"][3] if kind == "mine" else INK)
         st = 0.9 if kind == "project" else 1.2 + 0.15 * i
-        p = ease_out(prog(t, st, 0.5))
+        p = ease_out(prog(tt, st, 0.5))
         x, y = proj(pn["lon"], pn["lat"])
         _pin(ctx, x, y, col, p, t, pulse=(kind == "project"), big=(kind == "project"))
-        q = ease_out(prog(t, st + 0.25, 0.5))
+        q = ease_out(prog(tt, st + 0.25, 0.5))
         if q <= 0: continue
         side = pn.get("side", "right" if x < zx + zw * 0.62 else "left")
         size = 32 if kind == "project" else 26
@@ -192,7 +215,7 @@ def map_scene(ctx, sc, t, D, env):
     ctx.set_source(pat); ctx.mask(fade)
     # locator inset
     if sc.get("inset") and isinstance(sc.get("region"), (str, list)) and sc.get("region") not in ("AU", "WORLD"):
-        q = ease_out(prog(t, 0.6, 0.6))
+        q = ease_out(prog(tt, 0.6, 0.6))
         iw, ih = 230, 200
         ix, iy = X1 - iw, zy + zh - ih
         card(ctx, ix, iy, iw, ih, q, r=18)

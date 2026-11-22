@@ -37,7 +37,7 @@ Optional `META["music"]`: every video gets a generated backing track ducked unde
 | type | data | use it for |
 |---|---|---|
 | `hook` | `kicker`, `title`, `chips: [{label, text} or {label, value, prefix, suffix, dp}]` (max 3) | opener with the element tile |
-| `map` | `region` (AU, WA, WA_SOUTH, GOLDFIELDS, PILBARA, QLD, NSW_VIC, SA_NT, USA, USA_WEST, NEVADA, CANADA, AFRICA, WEST_AFRICA, SOUTH_AMERICA, EUROPE, WORLD or `[lon0, lat0, lon1, lat1]`), `pins: [{name, sub, lat, lon, kind: project/mine/town, side, dy}]`, `links: [{from, to, label}]`, `areas: ["Nevada"]`, `highlight: [country]`, `inset: true` | where the project is, neighbours, distances |
+| `map` | `region` (AU, WA, WA_SOUTH, GOLDFIELDS, PILBARA, QLD, NSW_VIC, SA_NT, USA, USA_WEST, NEVADA, CANADA, AFRICA, WEST_AFRICA, SOUTH_AMERICA, EUROPE, WORLD or `[lon0, lat0, lon1, lat1]`), `pins: [{name, sub, lat, lon, kind: project/mine/town, side, dy}]`, `links: [{from, to, label}]`, `areas: ["Nevada"]`, `highlight: [country]`, `inset: true`, `zoom: false` (skip the opening zoom), `zoom_from` (region name or bbox to start the zoom from; default Australia, or the continent for overseas regions) | where the project is, neighbours, distances. Opens zoomed out on Australia and eases into the region automatically |
 | `stats` | `items: [{label, value, prefix, suffix, dp, note, highlight} or {label, text, ...}]` (2 to 6) | price, market cap, cash, EV, resource |
 | `bars` | `bars: [{label, value, highlight}]`, `fmt`, `callout: {text, caption}`, `note` | peer comparisons, EV per ounce, price gaps |
 | `line` | `series: [[label, value], ...]`, `fmt`, `annotations: [{at, text, above}]`, `color: "commodity"`, `note` | price history, commodity trends (only real data points) |

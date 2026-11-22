@@ -87,6 +87,7 @@ def rings_in(bbox):
         for r in rings:
             xs = [p[0] for p in r]; ys = [p[1] for p in r]
             if max(xs) < lo0 or min(xs) > lo1 or max(ys) < la0 or min(ys) > la1: continue
+            if max(xs) - min(xs) > 300: continue   # slivers split at the antimeridian (e.g. Fiji) draw as a line across the map
             out.append((n, r))
     return out
 
@@ -108,6 +109,56 @@ class Projection:
     def km(self):
         """pixels per km"""
         return self.s / 111.0
+
+
+def camera(a, b, e):
+    """A Projection part-way (e in 0..1) on a smooth zoom from projection a to projection b.
+    Scale moves geometrically; the centre moves so the destination stays steady in view (no swing)."""
+    c = object.__new__(Projection)
+    c.cx, c.cy = b.cx, b.cy
+    c.k = a.k + (b.k - a.k) * e
+    c.s = math.exp(math.log(a.s) + (math.log(b.s) - math.log(a.s)) * e)
+    w = 1.0 if a.s == b.s else (1 / a.s - 1 / c.s) / (1 / a.s - 1 / b.s)
+    c.lo, c.la = a.lo + (b.lo - a.lo) * w, a.la + (b.la - a.la) * w
+    return c
+
+
+def view_bbox(proj, rect):
+    """The lon/lat box a projection shows inside a pixel rect."""
+    x, y, w, h = rect
+    lo0 = proj.lo + (x - proj.cx) / (proj.k * proj.s); lo1 = proj.lo + (x + w - proj.cx) / (proj.k * proj.s)
+    la1 = proj.la + (proj.cy - y) / proj.s; la0 = proj.la + (proj.cy - y - h) / proj.s
+    return (lo0, la0, lo1, la1)
+
+
+ZOOM_PARENTS = ["USA", "CANADA", "AFRICA", "SOUTH_AMERICA", "EUROPE"]
+
+
+def zoom_context(bbox, override=None):
+    """Where a map scene's opening zoom starts: Australia for Australian regions, else the smallest
+    continent-scale region around it. None when the region is already that wide (no zoom)."""
+    if override is not None:
+        ctx = resolve_region(override)
+    else:
+        lo0, la0, lo1, la1 = bbox
+        cx, cy = (lo0 + lo1) / 2, (la0 + la1) / 2
+        au = REGIONS["AU"]
+        if au[0] <= cx <= au[2] and au[1] <= cy <= au[3]:
+            ctx = au
+        else:
+            cands = [REGIONS[n] for n in ZOOM_PARENTS
+                     if REGIONS[n][0] <= cx <= REGIONS[n][2] and REGIONS[n][1] <= cy <= REGIONS[n][3]]
+            cands = [c for c in cands if (c[2] - c[0]) >= 2.5 * (lo1 - lo0)]
+            if cands:
+                ctx = min(cands, key=lambda c: (c[2] - c[0]) * (c[3] - c[1]))
+            elif lo1 - lo0 > 15:
+                return None                      # already continent-scale (USA, WORLD...): nothing to zoom from
+            else:
+                hw, hh = (lo1 - lo0) * 3, (la1 - la0) * 3
+                ctx = (cx - hw, max(-85, cy - hh), cx + hw, min(85, cy + hh))
+    if (ctx[2] - ctx[0]) < 2.0 * (bbox[2] - bbox[0]) and (ctx[3] - ctx[1]) < 2.0 * (bbox[3] - bbox[1]):
+        return None
+    return tuple(ctx)
 
 
 def resolve_region(region):
