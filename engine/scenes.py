@@ -95,6 +95,13 @@ def _pin(ctx, x, y, col, p, t, pulse=True, big=True):
 MAP_ZOOM = 1.1   # scene-time units (x SLOW, ~1.4s real) for the opening Australia -> region zoom
 
 
+def _inset_box(sc, zy, zh):
+    """The locator inset's (x, y, w, h), or None when the map has no inset."""
+    if sc.get("inset") and isinstance(sc.get("region"), (str, list)) and sc.get("region") not in ("AU", "WORLD"):
+        return (X1 - 230, zy + zh - 200, 230, 200)
+    return None
+
+
 def map_scene(ctx, sc, t, D, env):
     top = heading(ctx, sc, t, env)
     zx, zy, zw, zh = zone(top)
@@ -163,10 +170,13 @@ def map_scene(ctx, sc, t, D, env):
     if sc.get("context", True):
         q = ease_out(prog(tt, 0.8, 0.8))
         taken = [proj(p_["lon"], p_["lat"]) for p_ in pins]
+        inset_box = _inset_box(sc, zy, zh)
         for nm, lo, la in geo.TOWNS:
             if not (bbox[0] < lo < bbox[2] and bbox[1] < la < bbox[3]): continue
             x, y = proj(lo, la)
             if any(abs(x - a) < 150 and abs(y - b) < 70 for a, b in taken): continue
+            if inset_box and x + 10 + width(ctx, nm, MONO, 19) * 1.1 > inset_box[0] - 12 and y + 12 > inset_box[1] - 12:
+                continue   # would sit under the locator inset
             taken.append((x, y))
             ctx.new_path(); ctx.arc(x, y, 4, 0, 2 * math.pi); rgba(ctx, INK, 0.5 * q); ctx.fill()
             text(ctx, nm.upper(), x + 10, y + 7, MONO, 19, MUTED, q * 0.9, tracking=0.04)
@@ -185,6 +195,7 @@ def map_scene(ctx, sc, t, D, env):
         mx, my = (x0 + x1_) / 2, (y0 + y1_) / 2
         w_ = width(ctx, lab, MONO_BOLD, 24) + 28
         rrect(ctx, mx - w_ / 2, my - 22, w_, 44, 22); rgba(ctx, INK, q); ctx.fill()
+        if q > 0.5: layout_box(ctx, "card", mx - w_ / 2, my - 22, w_, 44, lab)
         text(ctx, lab, mx, my + 8, MONO_BOLD, 24, BG, q, align="center")
     # pins + labels
     for i, pn in enumerate(pins):
@@ -214,10 +225,9 @@ def map_scene(ctx, sc, t, D, env):
     fade.add_color_stop_rgba(1 - f0, 0, 0, 0, 1); fade.add_color_stop_rgba(1, 0, 0, 0, 0)
     ctx.set_source(pat); ctx.mask(fade)
     # locator inset
-    if sc.get("inset") and isinstance(sc.get("region"), (str, list)) and sc.get("region") not in ("AU", "WORLD"):
+    if _inset_box(sc, zy, zh):
         q = ease_out(prog(tt, 0.6, 0.6))
-        iw, ih = 230, 200
-        ix, iy = X1 - iw, zy + zh - ih
+        ix, iy, iw, ih = _inset_box(sc, zy, zh)
         card(ctx, ix, iy, iw, ih, q, r=18)
         ip = geo.Projection(geo.REGIONS["AU"], (ix, iy, iw, ih), pad=16)
         for name, ring in geo.rings_in(geo.REGIONS["AU"]):
@@ -366,11 +376,15 @@ def catalysts(ctx, sc, t, D, env):
 
 
 # ---------------------------------------------------------------- versus (two stacked cards)
-def _bullet_card(ctx, x, y, w, title, pts, col, glyph, t, start, spread):
+def _bullet_h(ctx, w, pts, lh=48, gap=26):
+    return 112 + sum(len(wrap(ctx, s, SANS_MED, 38, w - 120)) * lh + gap for s in pts) + 14
+
+
+def _bullet_card(ctx, x, y, w, title, pts, col, glyph, t, start, spread, lh=48, gap=26):
     p = ease_out(prog(t, start, 0.5))
     if p <= 0: return 0
     lines = [wrap(ctx, s, SANS_MED, 38, w - 120) for s in pts]
-    h = 112 + sum(len(l) * 48 + 26 for l in lines) + 14
+    h = 112 + sum(len(l) * lh + gap for l in lines) + 14
     card(ctx, x, y, w, h, p)
     # glyph
     gx, gy = x + 46, y + 52
@@ -381,9 +395,9 @@ def _bullet_card(ctx, x, y, w, title, pts, col, glyph, t, start, spread):
     for i, ls in enumerate(lines):
         q = ease_out(prog(t, start + 0.25 + i * spread, 0.5))
         for k, ln in enumerate(ls):
-            text(ctx, ln, x + 76 + (1 - q) * 16, yy + k * 48, SANS_MED, 38, INK, q)
+            text(ctx, ln, x + 76 + (1 - q) * 16, yy + k * lh, SANS_MED, 38, INK, q)
         ctx.new_path(); ctx.arc(x + 48, yy - 12, 5, 0, 2 * math.pi); rgba(ctx, col, q); ctx.fill()
-        yy += len(ls) * 48 + 26
+        yy += len(ls) * lh + gap
     return h
 
 
@@ -392,11 +406,16 @@ def versus(ctx, sc, t, D, env):
     zx, zy, zw, zh = zone(top)
     a, b = sc["for"], sc["against"]
     spread = max(0.35, (D * 0.42) / max(1, len(a["points"]) + len(b["points"])))
-    h1 = _bullet_card(ctx, zx, zy, zw, a.get("title", "Going for it"), a["points"], UP, "up", t, 0.4, spread)
+    # versus is the last scene, so both cards must clear the disclaimer card that rises at the end:
+    # tighten the bullet spacing step by step until they fit (most videos need one small step)
+    limit = SAFE_BOTTOM - (74 + len(wrap(ctx, env.get("disclaimer", ""), SANS, 27, X1 - X0 - 120)) * 36) - 16
+    lh, gap, between = 48, 26, 24
+    while zy + _bullet_h(ctx, zw, a["points"], lh, gap) + between + _bullet_h(ctx, zw, b["points"], lh, gap) > limit and lh > 42:
+        lh, gap, between = lh - 1, max(14, gap - 2), max(16, between - 1)
+    h1 = _bullet_card(ctx, zx, zy, zw, a.get("title", "Going for it"), a["points"], UP, "up", t, 0.4, spread, lh, gap)
     st2 = 0.4 + 0.3 + spread * len(a["points"])
-    # estimate h1 even before it's drawn so card 2 doesn't jump
     if h1 == 0: return
-    _bullet_card(ctx, zx, zy + h1 + 24, zw, b.get("title", "Working against it"), b["points"], DOWN, "down", t, st2, spread)
+    _bullet_card(ctx, zx, zy + h1 + between, zw, b.get("title", "Working against it"), b["points"], DOWN, "down", t, st2, spread, lh, gap)
 
 
 # ---------------------------------------------------------------- numbered list
@@ -602,8 +621,9 @@ def big(ctx, sc, t, D, env):
     q = ease_out(prog(t, 0.7, 0.6))
     for k, ln in enumerate(wrap(ctx, sc.get("caption", ""), SANS_MED, 38, zw - 60)[:3]):
         text(ctx, ln, W / 2, cy + 90 + k * 50, SANS_MED, 38, INK, q, align="center")
-    if sc.get("sub"):
-        text(ctx, sc["sub"], W / 2, cy + 90 + 3 * 50 + 10, MONO, 22, MUTED, q, align="center")
+    if sc.get("sub"):   # wraps to two lines rather than running off the screen
+        for k, ln in enumerate(wrap(ctx, sc["sub"], MONO, 22, zw - 40)[:2]):
+            text(ctx, ln, W / 2, cy + 90 + 3 * 50 + 10 + k * 32, MONO, 22, MUTED, q, align="center")
 
 
 # ---------------------------------------------------------------- outro

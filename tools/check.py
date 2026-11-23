@@ -1,6 +1,8 @@
 """Pre-flight checks for a video spec: structure, length, compliance wording, repeats and exclusions.
 
   python tools/check.py videos/2026-11-16-vka        -> exit 1 with reasons if anything fails
+  python tools/check.py --layout videos/...          -> also render each scene's rest frame and fail on layout
+                                                         problems (needs the render deps; see engine/layout.py)
 """
 import datetime as dt, importlib.util, os, re, sys
 
@@ -94,11 +96,19 @@ def main(folder):
             d, t = l.split()[:2]
             if t.upper() == tk and l.split()[0] != meta["date"] and (today - dt.date.fromisoformat(d)).days < 180:
                 err.append(f"{tk} was featured on {d}; no repeats within 180 days")
+    if LAYOUT:   # rest frame of every scene, timed from word counts like a --sheet build
+        sys.path.insert(0, ROOT)
+        from engine import build, layout
+        for p in layout.check(m, build._guess_timeline(m)): err.append(f"layout: {p}")
     for w_ in warn: print("WARN ", w_)
     for e in err: print("ERROR", e)
     print(f"{slug}: {words} words, {len(scenes)} scenes -> {'FAIL' if err else 'OK'}")
     return 1 if err else 0
 
 
+LAYOUT = False
+
 if __name__ == "__main__":
-    sys.exit(max(main(f) for f in sys.argv[1:]))
+    args = sys.argv[1:]
+    if "--layout" in args: LAYOUT = True; args.remove("--layout")
+    sys.exit(max(main(f) for f in args))

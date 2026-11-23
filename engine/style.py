@@ -79,6 +79,16 @@ def width(ctx, s, face, size, tracking=0.0):
     font(ctx, face, size)
     return ctx.text_extents(s).x_advance + tracking * size * max(0, len(s) - 1)
 
+# ---------- layout recorder (engine/layout.py turns these boxes into overlap / off-screen checks) ----------
+LAYOUT = None   # a list while engine.layout is recording a frame, else None (normal renders pay nothing)
+
+def layout_box(ctx, kind, x, y, w, h, label=""):
+    """Record a drawn element's box in device pixels. kind: 'text' or 'card'."""
+    if LAYOUT is None or w <= 0 or h <= 0: return
+    pts = [ctx.user_to_device(px, py) for px, py in ((x, y), (x + w, y), (x, y + h), (x + w, y + h))]
+    xs, ys = [q[0] for q in pts], [q[1] for q in pts]
+    LAYOUT.append((kind, min(xs), min(ys), max(xs), max(ys), label))
+
 def text(ctx, s, x, y, face, size, col=INK, a=1.0, align="left", tracking=0.0):
     """Draw text with its baseline at y. tracking is extra letter spacing in ems."""
     if a <= 0 or not s: return 0
@@ -86,6 +96,9 @@ def text(ctx, s, x, y, face, size, col=INK, a=1.0, align="left", tracking=0.0):
     w = width(ctx, s, face, size, tracking)
     if align == "center": x -= w / 2
     elif align == "right": x -= w
+    if LAYOUT is not None and a > 0.5 and s.strip():
+        ext = ctx.text_extents(s)
+        layout_box(ctx, "text", x + max(0.0, ext.x_bearing), y + ext.y_bearing, w - max(0.0, ext.x_bearing), ext.height, s)
     rgba(ctx, col, a)
     if tracking:
         cx = x
@@ -112,6 +125,7 @@ def rrect(ctx, x, y, w, h, r):
     ctx.close_path()
 
 def card(ctx, x, y, w, h, a=1.0, r=26, fill=CARD, stroke=LINE):
+    if a > 0.5: layout_box(ctx, "card", x, y, w, h)
     rrect(ctx, x, y, w, h, r); rgba(ctx, fill, 0.92 * a); ctx.fill_preserve()
     rgba(ctx, stroke, a); ctx.set_line_width(2); ctx.stroke()
 

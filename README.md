@@ -35,7 +35,8 @@ To stop a post: delete its line from `queue.txt` before 7:30pm. To pull one that
 ```
 bash tools/install.sh                      # or: apt ffmpeg libcairo2-dev, pip install -r requirements.txt kokoro-onnx, copy assets/fonts to ~/.fonts
 python3 tools/check.py videos/2026-11-16-vka
-python3 -m engine.build videos/2026-11-16-vka --out out --sheet      # contact sheet of every scene, no voice needed
+python3 -m engine.build videos/2026-11-16-vka --out out --sheet      # contact sheet of every scene + layout check, no voice needed
+python3 tools/check.py --layout videos/2026-11-16-vka                # also fails on layout problems (overlaps, off screen, subtitle zone)
 python3 -m engine.build videos/2026-11-16-vka --out out              # full mp4 + caption + cover
 python3 -m brand.make --out brand/out                                # profile pics, highlight covers, pinned carousel
 ```
@@ -45,6 +46,7 @@ See `CONTENT.md` for the spec format and editorial rules, and `BRAND.md` for the
 ## Files
 
 - `engine/` renderer: `scenes.py` (all scene types), `render.py` (header, subtitles, cover), `voice.py` (Kokoro/ElevenLabs), `audio.py` (generated backing track: lofi, pulse or ambient, picked per video and ducked under the voice; `tools/test_audio.py` tests it), `geo.py` (maps; every map scene opens zoomed out on Australia or the continent and eases into the region, `tools/test_map_zoom.py` tests it)
+- `engine/layout.py` layout guard: renders each scene's rest frame with a recorder on and flags overlapping cards or labels, text crossing a card edge or other text, anything off screen, in the subtitle zone or under the closing disclaimer card (`tools/test_layout.py` tests it)
 - `assets/fonts` Inter Tight, Instrument Serif, JetBrains Mono (all SIL OFL). `assets/geo` Natural Earth outlines via world-atlas
 - `publish/insights.py` writes `insights.csv` (one row per post, latest numbers; `tools/test_insights.py` tests it offline)
 - `exclusions.txt` tickers never to feature (holdings and conflicts). `featured.txt` everything already featured (no repeats within 180 days)

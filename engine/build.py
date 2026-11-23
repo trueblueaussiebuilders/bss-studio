@@ -82,6 +82,11 @@ def main():
                             os.path.join(a.out, f"{slug}_sheet.png")] if len(paths) > 1 else
                            ["-vf", "scale=360:-1", os.path.join(a.out, f"{slug}_sheet.png")], check=True)
         print(f"[{slug}] stills -> {a.out} (total ~{TL.duration:.1f}s)")
+        if a.sheet:
+            from engine import layout
+            issues = layout.check(SPEC, TL)
+            for msg in issues: print(f"[{slug}] LAYOUT {msg}")
+            print(f"[{slug}] layout: {'clean' if not issues else f'{len(issues)} problem(s), fix before queueing'}")
         return
 
     print(f"[{slug}] voice: {voice.engine_name()}")

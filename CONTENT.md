@@ -32,6 +32,8 @@ SOURCES = ["https://...", ...]
 
 Optional `META["music"]`: every video gets a generated backing track ducked under the voice. Leave it out (or `True`) and the engine picks a style, key and chord loop from the slug, so videos vary but a rebuild sounds the same. Set `"lofi"` (laid-back beat, electric piano), `"pulse"` (steady four-on-the-floor, arpeggio) or `"ambient"` (pad, plucks, slow heartbeat kick) to choose one, or `False` for voice only.
 
+**Layout check.** `--sheet` builds end with `layout: clean` or LAYOUT lines, and `tools/check.py --layout` fails on the same problems: cards or labels overlapping (e.g. two drill-hole callouts at similar depths, a map label on the locator inset), text off screen, content in the subtitle zone, or the last scene running under the disclaimer card. Fix them in the spec (fewer holes or items, a tighter map region, `side`/`dy` on pins, shorter text). The `versus` scene tightens its own spacing to clear the disclaimer card.
+
 `*word*` in any title turns that word into red italic. Every scene has `say` (narration); most have `label` (small section label) and `title`.
 
 | type | data | use it for |
@@ -47,5 +49,5 @@ Optional `META["music"]`: every video gets a generated backing track ducked unde
 | `timeline` | `events: [{when, text, done}]` (max 5) | history or a longer calendar |
 | `versus` | `for: {title, points}`, `against: {title, points}` | both sides (always include) |
 | `list` | `items: [str]` (max 5) | risks, steps, explainers |
-| `big` | `value`+`prefix`/`suffix` or `text`, `caption`, `sub` | one number that matters |
+| `big` | `value`+`prefix`/`suffix` or `text`, `caption`, `sub` (wraps to two lines) | one number that matters |
 | `outro` | optional `cta`, `disclaimer` | not used any more (kept for old videos) |
