@@ -26,7 +26,8 @@
     "\\bktpa\\b": "thousand tonnes a year",
     "(\\d)\\s?%": "\\1 percent",
     "\\bA\\$": "",
-    "\\bEPBC\\b": "E-P-B-C"
+    "\\bEPBC\\b": "E-P-B-C",
+    "\\bQMines\\b": "Q Mines"
   },
   "ipa": {
     "Leeuwin": "lˈuːɪn",
@@ -65,6 +66,7 @@
     "Eneabba": "ˌɛniˈabə",
     "Lynas": "lˈaɪnəs",
     "Iluka": "aɪlˈuːkə",
-    "dysprosium": "dɪspɹˈəʊziəm"
+    "dysprosium": "dɪspɹˈəʊziəm",
+    "Yeppoon": "jəpˈuːn"
   }
 }
