@@ -30,7 +30,9 @@ Rotate 6 to 8 per post: `#ASX #ASXstocks #smallcaps #mining #miningstocks #junio
 
 ## Motion
 
-Maps open wide and zoom in: every map scene starts on the whole of Australia (or the continent around an overseas project, e.g. the USA for Nevada) with the target area outlined in the accent red, then eases into the region over about 1.4 seconds. The outline fades as the zoom lands and the pins, links and labels pop in straight after. Regions that are already continent-wide (AU, USA, WORLD) don't zoom.
+Maps open wide and zoom in: every map scene starts on the whole of Australia (or the continent around an overseas project, e.g. the USA for Nevada) with the target area outlined in the accent red, then eases into the region over about 1.4 seconds. The outline fades as the zoom lands and the pins, links and labels pop in straight after. Regions that are already continent-wide (AU, USA, WORLD) don't zoom. The locator inset shows Australia for Australian projects and the continent (e.g. South America) for overseas ones.
+
+The hook lands fast: the kicker is up on the first frame, the title slides in from 0s, and the hook's headline number (`stat`) counts up in the accent red, landing by about 1.4s with a red underline sweep. The hook cuts to the next scene about a third of a second after its line, so the first cut comes at roughly 4s instead of 4.5s.
 
 ## Sound
 

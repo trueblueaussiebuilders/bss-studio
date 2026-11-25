@@ -43,7 +43,9 @@ def _guess_timeline(spec):
         t, sub = 0.15, []
         for s in sents:
             d = len(s.split()) / 2.9; sub.append((t, t + d, s)); t += d + 0.42
-        durs.append(max(3.2, t + 1.0)); subs.append(sub)
+        first_hook = not durs and sc.get("type") == "hook"
+        spoken = sub[-1][1] if sub else t
+        durs.append(max(2.4, spoken + 0.45) if first_hook else max(3.2, t + 1.0)); subs.append(sub)
     durs[-1] += 2.6
     return render.Timeline(durs, subs)
 
@@ -90,7 +92,9 @@ def main():
         return
 
     print(f"[{slug}] voice: {voice.engine_name()}")
-    durs, subs, track = voice.narrate([sc.get("say", "") for sc in SPEC.SCENES])
+    hook_first = SPEC.SCENES and SPEC.SCENES[0].get("type") == "hook"
+    durs, subs, track = voice.narrate([sc.get("say", "") for sc in SPEC.SCENES],
+                                      first_gap=voice.HOOK_GAP if hook_first else None)
     json.dump({"durations": durs, "subs": subs}, open(tim_path, "w"))
     TL = render.Timeline(durs, subs)
     print(f"[{slug}] duration {TL.duration:.1f}s, {len(TL.scenes)} scenes")

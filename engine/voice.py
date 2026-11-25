@@ -163,8 +163,12 @@ def _tempo(a, factor):
     return np.frombuffer(raw, dtype=np.float32).copy()
 
 
-def narrate(lines, gap=None):
-    """lines: one narration string per scene.
+HOOK_GAP = 0.35  # pause after the hook line before the first cut (other scenes use line_gap)
+
+
+def narrate(lines, gap=None, first_gap=None):
+    """lines: one narration string per scene. first_gap: the pause after scene 1 (a short one makes the
+    first cut land sooner); defaults to the normal gap.
     Returns (durations, subtitles, track): per-scene seconds, per-scene [(start, end, sentence)], float32 audio."""
     ecfg = _cfg().get(engine_name(), {}) if isinstance(_cfg().get(engine_name()), dict) else {}
     tempo = ecfg.get("tempo", 1.0)
@@ -183,7 +187,8 @@ def narrate(lines, gap=None):
             sub.append((round(t, 3), round(t + len(a) / SR, 3), sent)); t += len(a) / SR
         clip = np.concatenate(chunks) if chunks else np.zeros(1, dtype=np.float32)
         last = k == len(split) - 1
-        durs.append(round(max(3.2, t + (END_HOLD if last else gap)), 3))
+        g = first_gap if (k == 0 and first_gap is not None) else gap
+        durs.append(round(max(2.4 if k == 0 else 3.2, t + (END_HOLD if last else g)), 3))
         subs.append(sub); clips.append(clip)
     total = sum(durs)
     track = np.zeros(int((total + 0.5) * SR), dtype=np.float32)

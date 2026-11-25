@@ -13,13 +13,14 @@ META = {
 SCENES = [
     {"type": "hook", "kicker": "ASX:ASL  ·  Silver  ·  Chile",
      "title": "A shut *silver* mine keeps finding new veins",
+     "stat": {"value": 1269, "suffix": " g/t", "caption": "silver equiv. over 1.7m, ~1 km from the plant"},
      "chips": [{"label": "Resource", "value": 136, "suffix": " Moz AgEq", "dp": 0},
                {"label": "Cash", "value": 70.5, "prefix": "~A$", "suffix": "m", "dp": 1},
                {"label": "Plant", "text": "On site, idle"}],
      "say": "A shut silver mine in Patagonia keeps finding new veins."},
 
     {"type": "map", "label": "The project", "title": "A mine on *care and maintenance*",
-     "region": [-75.6, -48.6, -69.0, -44.6], "zoom_from": "SOUTH_AMERICA", "highlight": ["Chile"],
+     "region": [-75.6, -48.6, -69.0, -44.6], "zoom_from": "SOUTH_AMERICA", "highlight": ["Chile"], "inset": True,
      "pins": [{"name": "Cerro Bayo", "sub": "Plant on care and maintenance", "lat": -46.54, "lon": -72.00,
                "kind": "project", "side": "left", "dy": 30},
               {"name": "Chile Chico", "sub": "Town", "lat": -46.54, "lon": -71.72, "kind": "town", "side": "right", "dy": 30},

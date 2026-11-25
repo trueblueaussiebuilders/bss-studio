@@ -51,25 +51,56 @@ def element_tile(ctx, x, y, s, t, env, start=0.3):
     text(ctx, name.upper(), x + s / 2, y + s - 30, MONO, 22, col, q, align="center", tracking=0.08)
 
 
+HOOK_STAT_SIZE = 190   # serif size of the hook's headline number (shrinks to fit the width)
+
+
+def hook_stat_size(ctx, st):
+    size = HOOK_STAT_SIZE
+    full = fmt(st["value"], st) if "value" in st else st.get("text", "")
+    while width(ctx, full, SERIF, size) > X1 - X0 and size > 100: size -= 10
+    return size
+
+
 def hook(ctx, sc, t, D, env):
-    a = ease_out(prog(t, 0.0, 0.5))
-    text(ctx, sc.get("kicker", "").upper(), X0, 330, MONO, 26, env["accent"], a, tracking=0.08)
-    bottom = reveal_lines(ctx, sc["title"], X0, 460, sc.get("title_size", 108), X1 - X0, t, start=0.1,
-                          stagger=0.14, dur=0.8, accent=env["accent"])
+    """Opener. Everything lands fast (the first 1.5s decides the scroll): the kicker is up on frame one, the
+    title slides in from t=0, and an optional `stat` (the hook's headline number) counts up in red."""
+    a = ease_out(prog(t, 0.0, 0.25))
+    text(ctx, sc.get("kicker", "").upper(), X0, 330, MONO, 26, env["accent"], max(0.35, a), tracking=0.08)
+    bottom = reveal_lines(ctx, sc["title"], X0, 460, sc.get("title_size", 108), X1 - X0, t, start=0.0,
+                          stagger=0.1, dur=0.6, accent=env["accent"])
     gy = max(800, bottom + 150)
     tile = 340
-    element_tile(ctx, X0, gy, tile, t, env, start=0.55)
+    st = sc.get("stat")
+    if st:
+        size = hook_stat_size(ctx, st)
+        base = bottom + 64 + size * 0.78
+        p = prog(t, 0.2, 0.9)                       # count-up lands at ~1.4s real time
+        q = ease_out(prog(t, 0.15, 0.3))
+        val = fmt(st["value"] * ease_out(p), st) if "value" in st else st.get("text", "")
+        text(ctx, val, X0 - 4, base + (1 - q) * 30, SERIF, size, env["accent"], q)
+        # underline sweeps across as the number lands, then the caption arrives
+        u = ease_out(prog(t, 0.95, 0.45))
+        if u > 0:
+            full_w = width(ctx, fmt(st["value"], st) if "value" in st else st.get("text", ""), SERIF, size)
+            rrect(ctx, X0, base + 22, full_w * u, 5, 2.5); rgba(ctx, env["accent"], 0.85); ctx.fill()
+        if st.get("caption"):
+            text(ctx, st["caption"].upper(), X0, base + 76, MONO, 24, MUTED, ease_out(prog(t, 1.05, 0.4)),
+                 tracking=0.06)
+        gy = base + (128 if st.get("caption") else 80)
+        tile = int(min(340, max(300, 1370 - gy)))
+    element_tile(ctx, X0, gy, tile, t, env, start=0.45 if st else 0.55)
     chips = sc.get("chips", [])[:3]
     cx, cw = X0 + tile + 32, X1 - (X0 + tile + 32)
     ch = (tile - 16 * (len(chips) - 1)) / max(1, len(chips))
+    c0 = 0.6 if st else 0.8
     for i, c in enumerate(chips):
-        p = ease_out(prog(t, 0.8 + i * 0.15, 0.6))
+        p = ease_out(prog(t, c0 + i * 0.15, 0.6))
         if p <= 0: continue
         y = gy + i * (ch + 16) + (1 - p) * 30
         card(ctx, cx, y, cw, ch, p, r=22)
         text(ctx, c["label"].upper(), cx + 28, y + ch / 2 - 10, MONO, 21, MUTED, p, tracking=0.06)
-        cp = ease_out(prog(t, 0.95 + i * 0.15, 0.9))
-        text(ctx, value_of(c, cp), cx + 28, y + ch / 2 + 38, MONO_BOLD, 46, INK, p)
+        cp = ease_out(prog(t, c0 + 0.15 + i * 0.15, 0.9))
+        text(ctx, value_of(c, cp), cx + 28, y + ch / 2 + 38, MONO_BOLD, 46 if tile >= 330 else 42, INK, p)
 
 
 # ---------------------------------------------------------------- map
@@ -229,9 +260,10 @@ def map_scene(ctx, sc, t, D, env):
         q = ease_out(prog(tt, 0.6, 0.6))
         ix, iy, iw, ih = _inset_box(sc, zy, zh)
         card(ctx, ix, iy, iw, ih, q, r=18)
-        ip = geo.Projection(geo.REGIONS["AU"], (ix, iy, iw, ih), pad=16)
-        for name, ring in geo.rings_in(geo.REGIONS["AU"]):
-            if name != "Australia": continue
+        ireg = geo.inset_region(bbox)
+        ip = geo.Projection(ireg, (ix, iy, iw, ih), pad=16)
+        for name, ring in geo.rings_in(ireg):
+            if ireg == geo.REGIONS["AU"] and name != "Australia": continue
             _ring_path(ctx, ring, ip); rgba(ctx, INK, 0.25 * q); ctx.fill()
         bx0, by0 = ip(bbox[0], bbox[3]); bx1, by1 = ip(bbox[2], bbox[1])
         ctx.rectangle(bx0, by0, bx1 - bx0, by1 - by0); rgba(ctx, env["accent"], q); ctx.set_line_width(2.5); ctx.stroke()

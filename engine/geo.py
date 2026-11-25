@@ -161,6 +161,19 @@ def zoom_context(bbox, override=None):
     return tuple(ctx)
 
 
+def inset_region(bbox):
+    """What the locator inset shows: Australia for Australian regions, else the continent around the region
+    (the inset used to draw Australia even for a project in Chile or Nevada)."""
+    lo0, la0, lo1, la1 = bbox
+    cx, cy = (lo0 + lo1) / 2, (la0 + la1) / 2
+    au = REGIONS["AU"]
+    if au[0] <= cx <= au[2] and au[1] <= cy <= au[3]:
+        return au
+    cands = [REGIONS[n] for n in ZOOM_PARENTS
+             if REGIONS[n][0] <= cx <= REGIONS[n][2] and REGIONS[n][1] <= cy <= REGIONS[n][3]]
+    return min(cands, key=lambda c: (c[2] - c[0]) * (c[3] - c[1])) if cands else REGIONS["WORLD"]
+
+
 def resolve_region(region):
     if isinstance(region, str): return REGIONS[region.upper()]
     return tuple(region)
