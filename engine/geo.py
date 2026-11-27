@@ -92,6 +92,20 @@ def rings_in(bbox):
     return out
 
 
+def lakes_in(bbox, min_deg=0.0):
+    """Lakes (Natural Earth 10m + the Australian salt-lake supplement) whose box intersects bbox.
+    Returns dicts {n: name, s: 1 if salt lake, b: [lon0, lat0, lon1, lat1], r: [ring, ...]}.
+    min_deg drops lakes smaller than that many degrees across (too small to see at this zoom)."""
+    lo0, la0, lo1, la1 = bbox
+    out = []
+    for lk in _load("lakes.json"):
+        b = lk["b"]
+        if b[2] < lo0 or b[0] > lo1 or b[3] < la0 or b[1] > la1: continue
+        if max(b[2] - b[0], b[3] - b[1]) < min_deg: continue
+        out.append(lk)
+    return out
+
+
 class Projection:
     """Equirectangular with cos(lat) correction, fitted (centred) into a pixel rect."""
     def __init__(self, bbox, rect, pad=0.0):

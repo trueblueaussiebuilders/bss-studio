@@ -32,6 +32,8 @@ Rotate 6 to 8 per post: `#ASX #ASXstocks #smallcaps #mining #miningstocks #junio
 
 Maps open wide and zoom in: every map scene starts on the whole of Australia (or the continent around an overseas project, e.g. the USA for Nevada) with the target area outlined in the accent red, then eases into the region over about 1.4 seconds. The outline fades as the zoom lands and the pins, links and labels pop in straight after. Regions that are already continent-wide (AU, USA, WORLD) don't zoom. The locator inset shows Australia for Australian projects and the continent (e.g. South America) for overseas ones.
 
+Maps show lakes for context (from 27 Nov 2026), so inland close-ups aren't an empty field: salt lakes are pale pans (ink at 10% with a fine 30% edge), fresh lakes are filled with the background colour like the sea. Up to three of the biggest named lakes in view get a quiet label in serif italic, muted grey, 26px, placed on the lake or just beside it and never over a pin, a card or the inset.
+
 The hook lands fast: the kicker is up on the first frame, the title slides in from 0s, and the hook's headline number (`stat`) counts up in the accent red, landing by about 1.4s with a red underline sweep. The hook cuts to the next scene about a third of a second after its line, so the first cut comes at roughly 4s instead of 4.5s.
 
 ## Sound

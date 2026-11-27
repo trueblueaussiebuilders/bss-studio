@@ -45,7 +45,7 @@ See `CONTENT.md` for the spec format and editorial rules, and `BRAND.md` for the
 
 ## Files
 
-- `engine/` renderer: `scenes.py` (all scene types), `render.py` (header, subtitles, cover), `voice.py` (Kokoro/ElevenLabs), `audio.py` (generated backing track: lofi, pulse or ambient, picked per video and ducked under the voice; `tools/test_audio.py` tests it), `geo.py` (maps; every map scene opens zoomed out on Australia or the continent and eases into the region, `tools/test_map_zoom.py` tests it)
+- `engine/` renderer: `scenes.py` (all scene types), `render.py` (header, subtitles, cover), `voice.py` (Kokoro/ElevenLabs), `audio.py` (generated backing track: lofi, pulse or ambient, picked per video and ducked under the voice; `tools/test_audio.py` tests it), `geo.py` (maps; every map scene opens zoomed out on Australia or the continent and eases into the region, `tools/test_map_zoom.py` tests it; salt and fresh lakes from `assets/geo/lakes.json`, rebuilt by `tools/build_lakes.py`, tested by `tools/test_lakes.py`)
 - `engine/layout.py` layout guard: renders each scene's rest frame with a recorder on and flags overlapping cards or labels, text crossing a card edge or other text, anything off screen, in the subtitle zone or under the closing disclaimer card (`tools/test_layout.py` tests it)
 - `engine/scenes.py` hook: optional `stat` count-up and the quicker first cut (`voice.HOOK_GAP`); `tools/test_hook.py` tests it, plus the overseas locator inset (`geo.inset_region`)
 - `assets/fonts` Inter Tight, Instrument Serif, JetBrains Mono (all SIL OFL). `assets/geo` Natural Earth outlines via world-atlas

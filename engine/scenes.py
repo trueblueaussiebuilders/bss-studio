@@ -123,6 +123,53 @@ def _pin(ctx, x, y, col, p, t, pulse=True, big=True):
     ctx.arc(x, y, r, 0, 2 * math.pi); rgba(ctx, col, p); ctx.fill()
 
 
+def _pin_label_box(ctx, pn, x, y, zx, zw):
+    """Where a pin's name card sits (x, y, w, h), matching the drawing code below."""
+    kind = pn.get("kind", "project")
+    side = pn.get("side", "right" if x < zx + zw * 0.62 else "left")
+    size = 32 if kind == "project" else 26
+    lw = max(width(ctx, pn["name"], SANS_SEMI, size), width(ctx, pn.get("sub", ""), MONO, 21)) + 36
+    lh = 78 if pn.get("sub") else 54
+    lx = x + 26 if side == "right" else x - 26 - lw
+    return lx, y - lh / 2 + pn.get("dy", 0), lw, lh
+
+
+def _lake_labels(ctx, lakes, proj, bbox, zone_, pins, inset_box, q):
+    """Name the big lakes in faint serif italic, where the name fits inside the map and clears pins, cards and the inset."""
+    if q <= 0: return []
+    zx, zy, zw, zh = zone_
+    avoid = []
+    for pn in pins:
+        x, y = proj(pn["lon"], pn["lat"])
+        avoid.append((x - 24, y - 24, 48, 48))
+        avoid.append(_pin_label_box(ctx, pn, x, y, zx, zw))
+    if inset_box: avoid.append(inset_box)
+    placed, out = 0, []
+    for lk in sorted(lakes, key=lambda l: -((l["b"][2] - l["b"][0]) * (l["b"][3] - l["b"][1]))):
+        if not lk["n"] or placed >= 3: continue
+        ring = max(lk["r"], key=len)
+        pts = [proj(lo, la) for lo, la in ring]
+        xs = [p_[0] for p_ in pts]; ys = [p_[1] for p_ in pts]
+        if max(xs) - min(xs) < 70 and max(ys) - min(ys) < 70: continue      # too small to name
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        name = lk["n"]
+        w_ = width(ctx, name, SERIF_IT, 26)
+        # on the lake when the name fits inside it, else below, above, right or left of it
+        cands = [(cx - w_ / 2, cy - 20)] if w_ < max(xs) - min(xs) - 16 else []
+        cands += [(cx - w_ / 2, max(ys) + 8), (cx - w_ / 2, min(ys) - 36), (max(xs) + 12, cy - 20), (min(xs) - 12 - w_, cy - 20)]
+        box = None
+        for bx, by in cands:
+            b_ = (bx, by, w_, 28)
+            if bx < zx + 8 or bx + w_ > zx + zw - 8 or by < zy + 50 or by + 28 > zy + zh - 50: continue
+            if any(bx < a[0] + a[2] + 10 and a[0] < bx + w_ + 10 and by < a[1] + a[3] + 8 and a[1] < by + 36
+                   for a in avoid): continue
+            box = b_; break
+        if not box: continue
+        avoid.append(box); placed += 1; out.append(box)
+        text(ctx, name, box[0], box[1] + 22, SERIF_IT, 26, MUTED, q)
+    return out
+
+
 MAP_ZOOM = 1.1   # scene-time units (x SLOW, ~1.4s real) for the opening Australia -> region zoom
 
 
@@ -169,6 +216,14 @@ def map_scene(ctx, sc, t, D, env):
         hl = name in sc.get("highlight", ["Australia"])
         rgba(ctx, INK, 0.075 if hl else 0.035); ctx.fill_preserve()
         rgba(ctx, INK, 0.42 if hl else 0.16); ctx.set_line_width(2 if hl else 1.2); ctx.stroke()
+    lakes = geo.lakes_in(view, min_deg=(view[2] - view[0]) / 120) if sc.get("lakes", True) else []
+    for lk in lakes:
+        for ring in lk["r"]:
+            _ring_path(ctx, ring, proj)
+            if lk["s"]:     # salt lake: a pale pan with a fine edge
+                rgba(ctx, INK, 0.10); ctx.fill_preserve(); rgba(ctx, INK, 0.30); ctx.set_line_width(1.2); ctx.stroke()
+            else:           # fresh water reads as sea
+                rgba(ctx, BG, 1.0); ctx.fill_preserve(); rgba(ctx, INK, 0.30); ctx.set_line_width(1.2); ctx.stroke()
     if view[0] < 154 and view[2] > 112 and view[1] < -10 and view[3] > -44 and sc.get("states", True):
         ctx.save()
         for name, ring in rings:
@@ -202,12 +257,16 @@ def map_scene(ctx, sc, t, D, env):
         q = ease_out(prog(tt, 0.8, 0.8))
         taken = [proj(p_["lon"], p_["lat"]) for p_ in pins]
         inset_box = _inset_box(sc, zy, zh)
+        lake_boxes = _lake_labels(ctx, lakes, final, bbox, (zx, zy, zw, zh), pins, inset_box, q)
         for nm, lo, la in geo.TOWNS:
             if not (bbox[0] < lo < bbox[2] and bbox[1] < la < bbox[3]): continue
             x, y = proj(lo, la)
             if any(abs(x - a) < 150 and abs(y - b) < 70 for a, b in taken): continue
             if inset_box and x + 10 + width(ctx, nm, MONO, 19) * 1.1 > inset_box[0] - 12 and y + 12 > inset_box[1] - 12:
                 continue   # would sit under the locator inset
+            tw = width(ctx, nm.upper(), MONO, 19) * 1.1
+            if any(x - 6 < b[0] + b[2] and b[0] < x + 16 + tw and y - 14 < b[1] + b[3] and b[1] < y + 14 for b in lake_boxes):
+                continue   # would sit on a lake name
             taken.append((x, y))
             ctx.new_path(); ctx.arc(x, y, 4, 0, 2 * math.pi); rgba(ctx, INK, 0.5 * q); ctx.fill()
             text(ctx, nm.upper(), x + 10, y + 7, MONO, 19, MUTED, q * 0.9, tracking=0.04)
